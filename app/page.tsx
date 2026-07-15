@@ -108,6 +108,7 @@ export default function Home() {
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState(0);
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const [account, setAccount] = useState(100000);
   const [riskPct, setRiskPct] = useState(1);
   const [entry, setEntry] = useState(50);
@@ -167,7 +168,7 @@ export default function Home() {
     </>}
 
     {page === "book" && <section className="reader-shell">
-      <aside className="chapter-tree"><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <div className="tree-chapter" key={item.id}><button className={chapter === i ? "current" : ""} aria-expanded={chapter === i} onClick={() => {setChapter(i); window.scrollTo(0,0)}}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>{chapter === i && <div className="tree-children">{outline.map(({block, index, level}) => <button className={`tree-item level-${level}`} key={index} title={block.text} onClick={() => document.getElementById(`book-item-${index}`)?.scrollIntoView({behavior:"smooth", block:"start"})}><span aria-hidden="true">{level === 1 ? "▾" : "—"}</span>{block.text.replace(/^[-]\s*/, "")}</button>)}</div>}</div>)}</aside>
+      <aside className={`chapter-tree ${outlineOpen ? "open" : ""}`}><button className="tree-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen(value => !value)}><span>{lang === "en" ? "Chapter outline" : "Mục lục chương"}</span><b aria-hidden="true">{outlineOpen ? "−" : "+"}</b></button><div className="tree-body"><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <div className="tree-chapter" key={item.id}><button className={chapter === i ? "current" : ""} aria-expanded={chapter === i} onClick={() => {setChapter(i); window.scrollTo(0,0)}}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>{chapter === i && <div className="tree-children">{outline.map(({block, index, level}) => <button className={`tree-item level-${level}`} key={index} title={block.text} onClick={() => {document.getElementById(`book-item-${index}`)?.scrollIntoView({behavior:"smooth", block:"start"}); setOutlineOpen(false)}}><span aria-hidden="true">{level === 1 ? "▾" : "—"}</span>{block.text.replace(/^[-]\s*/, "")}</button>)}</div>}</div>)}</div></aside>
       <article className="book-page">{book && <><p className="chapter-label">{t.chapter} {book.chapters[chapter].number} / 5</p><h1>{book.chapters[chapter].title}</h1><div className="book-rule"/>{book.chapters[chapter].blocks.map((block, i) => <BookBlock block={block} index={i} key={i}/>)}<div className="chapter-nav"><button disabled={chapter === 0} onClick={() => setChapter(chapter - 1)}>← {t.previous}</button><a href={`./downloads/${lang === "en" ? "Kinh%20nghiệm_Luan_June%202026_English.pdf" : "Kinh%20nghiệm_Luan_June%202026.pdf"}`}>{t.download}</a><button disabled={chapter === 4} onClick={() => setChapter(chapter + 1)}>{t.next} →</button></div></>}</article>
     </section>}
 
