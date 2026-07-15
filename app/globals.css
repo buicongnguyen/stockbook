@@ -105,9 +105,11 @@ h1 { margin:12px 0 22px; font-family:var(--font-serif); font-size:clamp(42px,6vw
 .strategy-grid h2 { min-height:58px; font-family:var(--font-serif); font-size:25px; font-weight:400; }
 .strategy-grid p { color:#56615b; line-height:1.55; }
 .strategy-grid small { display:inline-block; margin-top:15px; padding:6px 9px; background:var(--cream); }
-.tools-grid { display:grid; grid-template-columns:1fr 1fr; gap:25px; margin-top:50px; }
+.tools-page { max-width:1240px; }
+.tools-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:25px; margin-top:50px; }
 .tool { padding:36px; background:var(--white); border:1px solid var(--line); }
 .tool h2 { margin:0 0 25px; font-family:var(--font-serif); font-size:30px; }
+.tool-kind { margin:0 0 7px; color:var(--gold); font-size:10px; font-weight:bold; letter-spacing:.15em; text-transform:uppercase; }
 .tool label { display:block; margin:14px 0; color:#56615b; font-size:12px; font-weight:bold; }
 .tool input { width:100%; margin-top:7px; padding:12px 13px; border:1px solid var(--line); background:var(--paper); color:var(--ink); }
 .result { margin-top:24px; padding:22px; background:var(--green); color:var(--white); }
@@ -116,6 +118,10 @@ h1 { margin:12px 0 22px; font-family:var(--font-serif); font-size:clamp(42px,6vw
 .result small { color:#d3dfd8; }
 .result.warn { background:#85583d; }
 .result.good { background:var(--green); }
+.metric-results { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:24px; background:var(--line); border:1px solid var(--line); }
+.metric-results.two { grid-template-columns:repeat(2,1fr); }
+.metric-results span { padding:14px 10px; background:var(--green); color:#d3dfd8; font-size:11px; text-align:center; }
+.metric-results strong { display:block; margin-top:6px; color:var(--white); font-family:var(--font-serif); font-size:25px; }
 footer { display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:20px; padding:28px 5vw; border-top:1px solid var(--line); font-size:11px; color:#68736d; }
 footer p { text-align:center; }
 footer span:last-child { text-align:right; }
