@@ -92,9 +92,19 @@ export default function Home() {
     if (saved === "vi" || saved === "en") queueMicrotask(() => setLang(saved));
   }, []);
   useEffect(() => {
+    const controller = new AbortController();
     localStorage.setItem("stockbook-language", lang);
     document.documentElement.lang = lang;
-    fetch(`./content/investment-experience-${lang}.json`).then(r => r.json()).then(setBook);
+    fetch(`./content/investment-experience-${lang}.json`, { signal: controller.signal })
+      .then(r => {
+        if (!r.ok) throw new Error(`Could not load ${lang} book content`);
+        return r.json();
+      })
+      .then(setBook)
+      .catch(error => {
+        if (error.name !== "AbortError") console.error(error);
+      });
+    return () => controller.abort();
   }, [lang]);
 
   const riskBudget = account * riskPct / 100;

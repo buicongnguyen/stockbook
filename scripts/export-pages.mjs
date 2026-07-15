@@ -25,9 +25,8 @@ try {
 }
 
 html = html
-  .replaceAll('href="/assets/', 'href="./assets/')
-  .replaceAll('src="/assets/', 'src="./assets/')
-  .replaceAll('href="/favicon.svg"', 'href="./favicon.svg"')
+  .replaceAll('"/assets/', '"./assets/')
+  .replaceAll('"/favicon.svg"', '"./favicon.svg"')
   .replace("<head>", "<head><base href=\"./\">");
 fs.writeFileSync(path.join(output, "index.html"), html);
 fs.writeFileSync(path.join(output, ".nojekyll"), "");
