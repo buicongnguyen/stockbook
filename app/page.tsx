@@ -8,18 +8,25 @@ type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
 
-function BookBlock({ block }: { block: Block }) {
-  if (block.type === "h3") return <h2 className="section-heading">{block.text}</h2>;
-  if (block.type === "h4") return <h3 className="subsection-heading">{block.text}</h3>;
+function blockOutlineLevel(block: Block) {
+  if (block.type === "h3" || /^\d+\.\d+\.?\s/.test(block.text)) return 1;
+  if (block.type === "h4" || /^\d+\)\s/.test(block.text) || /^[-]\s*(Nhóm|Group)\b/i.test(block.text)) return 2;
+  return 0;
+}
+
+function BookBlock({ block, index }: { block: Block; index: number }) {
+  const anchor = `book-item-${index}`;
+  if (block.type === "h3") return <h2 id={anchor} className="section-heading scroll-anchor">{block.text}</h2>;
+  if (block.type === "h4") return <h3 id={anchor} className="subsection-heading scroll-anchor">{block.text}</h3>;
 
   const isSection = /^\d+\.\d+\.?\s/.test(block.text);
   const isNumberedItem = /^\d+\)\s/.test(block.text);
   const isGroup = /^[-]\s*(Nhóm|Group)\b/i.test(block.text);
   const isFormula = /(?:^|\s)(?:P\/E|P\/B|PEG|EV\/EBITDA|EV|EBITDA|ROE|ROA|EPS|FCF|D\/E|Current Ratio|Quick Ratio|Stop-loss price|Giá cắt lỗ|Position size|Quy mô vị thế|Drawdown|Sharpe Ratio|GDP|Kelly|DRIP)\s*(?:\([^)]*\))?\s*=/.test(block.text);
 
-  if (isSection) return <h2 className="section-heading inferred">{block.text}</h2>;
-  if (isGroup) return <h3 className="group-heading">{block.text.replace(/^[-]\s*/, "")}</h3>;
-  if (isNumberedItem) return <h3 className="numbered-heading">{block.text}</h3>;
+  if (isSection) return <h2 id={anchor} className="section-heading inferred scroll-anchor">{block.text}</h2>;
+  if (isGroup) return <h3 id={anchor} className="group-heading scroll-anchor">{block.text.replace(/^[-]\s*/, "")}</h3>;
+  if (isNumberedItem) return <h3 id={anchor} className="numbered-heading scroll-anchor">{block.text}</h3>;
 
   if (block.type === "li") {
     const label = block.text.match(/^([^:]{2,55}:)\s*(.*)$/);
@@ -132,6 +139,8 @@ export default function Home() {
   const riskPerShare = Math.max(entry - stop, 0);
   const shares = riskPerShare ? Math.floor(riskBudget / riskPerShare) : 0;
   const rr = riskPerShare ? (target - entry) / riskPerShare : 0;
+  const activeChapter = book?.chapters[chapter];
+  const outline = activeChapter?.blocks.map((block, index) => ({ block, index, level: blockOutlineLevel(block) })).filter(item => item.level) ?? [];
 
   function navigate(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function changeLanguage(next: Lang) { setChapter(0); setLang(next); }
@@ -158,8 +167,8 @@ export default function Home() {
     </>}
 
     {page === "book" && <section className="reader-shell">
-      <aside><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <button key={item.id} className={chapter === i ? "current" : ""} onClick={() => {setChapter(i); window.scrollTo(0,0)}}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>)}</aside>
-      <article className="book-page">{book && <><p className="chapter-label">{t.chapter} {book.chapters[chapter].number} / 5</p><h1>{book.chapters[chapter].title}</h1><div className="book-rule"/>{book.chapters[chapter].blocks.map((block, i) => <BookBlock block={block} key={i}/>)}<div className="chapter-nav"><button disabled={chapter === 0} onClick={() => setChapter(chapter - 1)}>← {t.previous}</button><a href={`./downloads/${lang === "en" ? "Kinh%20nghiệm_Luan_June%202026_English.pdf" : "Kinh%20nghiệm_Luan_June%202026.pdf"}`}>{t.download}</a><button disabled={chapter === 4} onClick={() => setChapter(chapter + 1)}>{t.next} →</button></div></>}</article>
+      <aside className="chapter-tree"><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <div className="tree-chapter" key={item.id}><button className={chapter === i ? "current" : ""} aria-expanded={chapter === i} onClick={() => {setChapter(i); window.scrollTo(0,0)}}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>{chapter === i && <div className="tree-children">{outline.map(({block, index, level}) => <button className={`tree-item level-${level}`} key={index} title={block.text} onClick={() => document.getElementById(`book-item-${index}`)?.scrollIntoView({behavior:"smooth", block:"start"})}><span aria-hidden="true">{level === 1 ? "▾" : "—"}</span>{block.text.replace(/^[-]\s*/, "")}</button>)}</div>}</div>)}</aside>
+      <article className="book-page">{book && <><p className="chapter-label">{t.chapter} {book.chapters[chapter].number} / 5</p><h1>{book.chapters[chapter].title}</h1><div className="book-rule"/>{book.chapters[chapter].blocks.map((block, i) => <BookBlock block={block} index={i} key={i}/>)}<div className="chapter-nav"><button disabled={chapter === 0} onClick={() => setChapter(chapter - 1)}>← {t.previous}</button><a href={`./downloads/${lang === "en" ? "Kinh%20nghiệm_Luan_June%202026_English.pdf" : "Kinh%20nghiệm_Luan_June%202026.pdf"}`}>{t.download}</a><button disabled={chapter === 4} onClick={() => setChapter(chapter + 1)}>{t.next} →</button></div></>}</article>
     </section>}
 
     {page === "framework" && <section className="content-page"><p className="eyebrow">Decision system</p><h1>{t.flowTitle}</h1><p className="lede narrow">{t.flowIntro}</p><div className="flow">{flow[lang].map((step, i) => <div className="flow-wrap" key={step[0]}><article className="flow-node"><span>{step[0]}</span><div><h3>{step[1]}</h3><p>{step[2]}</p><small>{step[3]}</small></div></article>{i < flow[lang].length - 1 && <div className="connector">↓</div>}</div>)}</div></section>}
