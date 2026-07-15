@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Lang = "en" | "vi";
+type Theme = "light" | "dark";
 type Page = "home" | "book" | "framework" | "strategies" | "tools";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
@@ -127,6 +128,7 @@ const flow = {
 
 export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
+  const [theme, setTheme] = useState<Theme>("light");
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState(0);
@@ -151,7 +153,14 @@ export default function Home() {
   useEffect(() => {
     const saved = localStorage.getItem("stockbook-language") as Lang | null;
     if (saved === "vi" || saved === "en") queueMicrotask(() => setLang(saved));
+    const savedTheme = localStorage.getItem("stockbook-theme") as Theme | null;
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    queueMicrotask(() => setTheme(savedTheme === "dark" || savedTheme === "light" ? savedTheme : preferredTheme));
   }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("stockbook-theme", theme);
+  }, [theme]);
   useEffect(() => {
     const controller = new AbortController();
     localStorage.setItem("stockbook-language", lang);
@@ -190,9 +199,10 @@ export default function Home() {
       <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
       <nav>{(["home", "book", "framework", "strategies", "tools"] as Page[]).map((item, i) =>
         <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
-      <div className="language" aria-label="Language">
+      <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
         <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
         <button className={lang === "vi" ? "selected" : ""} onClick={() => changeLanguage("vi")}>VI</button>
+      </div>
       </div>
     </header>
 
