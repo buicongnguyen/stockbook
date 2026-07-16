@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
 type FlowStyle = "gates" | "pipeline" | "cycle";
-type Page = "home" | "book" | "framework" | "strategies" | "tools";
+type Page = "home" | "book" | "framework" | "cycles" | "strategies" | "tools";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
@@ -62,7 +62,7 @@ function BookBlock({ block, index }: { block: Block; index: number }) {
 
 const copy = {
   en: {
-    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Strategies", "Tools"],
+    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Strategies", "Tools"],
     eyebrow: "A practical investing field guide",
     hero: "Think clearly before you risk capital.",
     sub: "A bilingual learning site built from Investment Experience—turning market lessons, risk rules, and trading psychology into a repeatable process.",
@@ -74,7 +74,7 @@ const copy = {
     disclaimer: "Educational content only. This site does not provide investment advice.", quote: "Protect capital first. Opportunity comes again.",
   },
   vi: {
-    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chiến lược", "Công cụ"],
+    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Chiến lược", "Công cụ"],
     eyebrow: "Cẩm nang đầu tư thực chiến",
     hero: "Suy nghĩ rõ ràng trước khi mạo hiểm vốn.",
     sub: "Trang học tập song ngữ từ cuốn Kinh nghiệm đầu tư—biến bài học thị trường, nguyên tắc rủi ro và tâm lý giao dịch thành một quy trình có thể lặp lại.",
@@ -127,10 +127,26 @@ const flow = {
   ],
 };
 
+const marketCycles = {
+  en: [
+    { season:"Spring", phase:"Early cycle", economy:"Growth turns positive and accelerates. Credit conditions ease, inventories are low, and corporate profits begin to rebound.", sectors:"Consumer discretionary · Financials · Real estate · Industrials · Information technology", action:"Look for confirmed market strength and improving earnings. Keep position risk defined because recovery signals can fail.", color:"cycle-early" },
+    { season:"Summer", phase:"Mid-cycle", economy:"Growth stays positive but moderates. Credit is available, profitability is healthy, and monetary policy becomes more neutral.", sectors:"Information technology · Industrials · Select growth industries", action:"Favor quality growth and leaders with strong relative strength. Expect corrections even inside a healthy expansion.", color:"cycle-mid" },
+    { season:"Autumn", phase:"Late cycle", economy:"Growth remains positive but slows. Inflation, interest rates, inventories, and pressure on profit margins may rise.", sectors:"Energy · Materials · Health care · Consumer staples · Utilities", action:"Raise the quality bar, reduce excessive leverage, and watch for weakening breadth or earnings revisions.", color:"cycle-late" },
+    { season:"Winter", phase:"Recession", economy:"Economic activity and profits contract, credit becomes scarce, and rates often fall as policy becomes more supportive.", sectors:"Consumer staples · Utilities · Health care · Defensive businesses", action:"Protect capital, avoid forced trades, and prepare a watchlist for the next recovery rather than trying to predict the exact bottom.", color:"cycle-recession" },
+  ],
+  vi: [
+    { season:"Mùa xuân", phase:"Đầu chu kỳ", economy:"Tăng trưởng chuyển sang dương và tăng tốc. Tín dụng nới lỏng, tồn kho thấp và lợi nhuận doanh nghiệp bắt đầu phục hồi.", sectors:"Tiêu dùng không thiết yếu · Tài chính · Bất động sản · Công nghiệp · Công nghệ thông tin", action:"Tìm sức mạnh thị trường đã được xác nhận và lợi nhuận cải thiện. Luôn xác định rủi ro vì tín hiệu phục hồi có thể thất bại.", color:"cycle-early" },
+    { season:"Mùa hè", phase:"Giữa chu kỳ", economy:"Tăng trưởng vẫn dương nhưng chậm lại. Tín dụng thuận lợi, khả năng sinh lời khỏe và chính sách tiền tệ dần trung lập.", sectors:"Công nghệ thông tin · Công nghiệp · Các ngành tăng trưởng chọn lọc", action:"Ưu tiên doanh nghiệp tăng trưởng chất lượng và cổ phiếu dẫn dắt có sức mạnh tương đối. Vẫn phải chuẩn bị cho các nhịp điều chỉnh.", color:"cycle-mid" },
+    { season:"Mùa thu", phase:"Cuối chu kỳ", economy:"Tăng trưởng còn dương nhưng giảm tốc. Lạm phát, lãi suất, tồn kho và áp lực lên biên lợi nhuận có thể tăng.", sectors:"Năng lượng · Vật liệu · Y tế · Tiêu dùng thiết yếu · Tiện ích", action:"Nâng tiêu chuẩn chất lượng, giảm đòn bẩy quá mức và theo dõi độ rộng thị trường hoặc dự báo lợi nhuận suy yếu.", color:"cycle-late" },
+    { season:"Mùa đông", phase:"Suy thoái", economy:"Hoạt động kinh tế và lợi nhuận co lại, tín dụng khan hiếm; lãi suất thường giảm khi chính sách chuyển sang hỗ trợ.", sectors:"Tiêu dùng thiết yếu · Tiện ích · Y tế · Doanh nghiệp phòng thủ", action:"Bảo vệ vốn, tránh giao dịch ép buộc và chuẩn bị danh sách theo dõi cho kỳ phục hồi tiếp theo thay vì đoán chính xác đáy.", color:"cycle-recession" },
+  ],
+};
+
 export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<Theme>("light");
   const [flowStyle, setFlowStyle] = useState<FlowStyle>("gates");
+  const [cyclePhase, setCyclePhase] = useState(0);
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState(0);
@@ -199,7 +215,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
-      <nav>{(["home", "book", "framework", "strategies", "tools"] as Page[]).map((item, i) =>
+      <nav>{(["home", "book", "framework", "cycles", "strategies", "tools"] as Page[]).map((item, i) =>
         <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
       <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
         <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
@@ -227,6 +243,16 @@ export default function Home() {
       {flowStyle === "gates" && <><div className="graph-legend"><span><i className="yes-dot"/> {lang === "en" ? "Pass: continue" : "Đạt: tiếp tục"}</span><span><i className="no-dot"/> {lang === "en" ? "Fail: protect capital" : "Không đạt: bảo vệ vốn"}</span></div><div className="decision-graph" role="img" aria-label={lang === "en" ? "Stock-buying thought process from market analysis through review" : "Quy trình suy nghĩ khi mua cổ phiếu từ phân tích thị trường đến đánh giá"}>{flow[lang].map((step, i) => <div className="decision-row" key={step[0]}><div className="decision-spine"><span className="step-number">{step[0]}</span>{i < flow[lang].length - 1 && <span className="yes-path"><b>{lang === "en" ? "YES" : "CÓ"}</b>↓</span>}</div><article className="decision-node"><small>{lang === "en" ? `Gate ${step[0]}` : `Cổng ${step[0]}`}</small><h3>{step[1]}</h3><p>{step[2]}</p></article><div className="no-path"><span>{lang === "en" ? "NO" : "KHÔNG"} →</span><strong>{step[3].replace(/^(No|Không)\s*→\s*/i, "")}</strong></div></div>)}<div className="feedback-loop"><span>↺</span><p><strong>{lang === "en" ? "Learn and repeat" : "Học hỏi và lặp lại"}</strong><br/>{lang === "en" ? "The journal updates your filters, rules, and next decision." : "Nhật ký cập nhật bộ lọc, quy tắc và quyết định tiếp theo."}</p></div></div></>}
       {flowStyle === "pipeline" && <div className="pipeline-graph" role="img" aria-label={lang === "en" ? "Compact seven-step stock decision pipeline" : "Quy trình quyết định cổ phiếu bảy bước thu gọn"}>{flow[lang].map((step, i) => <div className="pipeline-wrap" key={step[0]}><article><span>{step[0]}</span><h3>{step[1]}</h3><p>{step[2]}</p><small>{step[3]}</small></article>{i < flow[lang].length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>}
       {flowStyle === "cycle" && <div className="cycle-graph" role="img" aria-label={lang === "en" ? "Observe, plan, act, and learn investment cycle" : "Chu trình đầu tư quan sát, lập kế hoạch, hành động và học hỏi"}><article className="cycle-observe"><span>01</span><h3>{lang === "en" ? "Observe" : "Quan sát"}</h3><p>{flow[lang][0][1]} · {flow[lang][1][1]}</p></article><i>→</i><article className="cycle-plan"><span>02</span><h3>{lang === "en" ? "Plan" : "Lập kế hoạch"}</h3><p>{flow[lang][2][1]} · {flow[lang][3][1]} · {flow[lang][4][1]}</p></article><i>↓</i><article className="cycle-learn"><span>04</span><h3>{lang === "en" ? "Learn" : "Học hỏi"}</h3><p>{flow[lang][6][2]}</p></article><i>←</i><article className="cycle-act"><span>03</span><h3>{lang === "en" ? "Act" : "Hành động"}</h3><p>{flow[lang][5][2]}</p></article><i>↑</i><div className="cycle-core"><strong>{lang === "en" ? "Protect capital" : "Bảo vệ vốn"}</strong><small>{lang === "en" ? "Discipline over prediction" : "Kỷ luật hơn dự đoán"}</small></div></div>}
+    </section>}
+
+    {page === "cycles" && <section className="content-page cycles-page"><p className="eyebrow">{lang === "en" ? "Market seasons" : "Các mùa của thị trường"}</p><h1>{lang === "en" ? "How the stock-market cycle changes the decision" : "Chu kỳ thị trường thay đổi quyết định như thế nào"}</h1><p className="lede narrow">{lang === "en" ? "The economy does not move in a straight line. Use this map to connect growth, credit, profits, sector leadership, and risk posture." : "Nền kinh tế không vận động theo đường thẳng. Sơ đồ này kết nối tăng trưởng, tín dụng, lợi nhuận, nhóm ngành dẫn dắt và cách quản trị rủi ro."}</p>
+      <div className="market-cycle-chart" role="img" aria-label={lang === "en" ? "Four-phase business and stock market cycle" : "Chu kỳ kinh tế và chứng khoán gồm bốn giai đoạn"}>
+        <svg viewBox="0 0 1000 310" aria-hidden="true"><path className="cycle-axis" d="M40 250H960"/><path className="cycle-wave" d="M40 235 C150 235 170 75 285 75 S410 155 510 155 S620 55 735 90 S850 260 960 235"/>{marketCycles[lang].map((phase,index) => { const points=[[120,190],[360,110],[690,78],[890,220]][index]; return <g key={phase.phase} className={cyclePhase === index ? "active" : ""}><circle cx={points[0]} cy={points[1]} r="13"/><text x={points[0]} y={points[1]-28} textAnchor="middle">{phase.season}</text><text x={points[0]} y={points[1]+38} textAnchor="middle">{phase.phase}</text></g>})}</svg>
+        <div className="cycle-phase-tabs">{marketCycles[lang].map((phase,index) => <button key={phase.phase} className={`${phase.color} ${cyclePhase === index ? "selected" : ""}`} aria-pressed={cyclePhase === index} onClick={() => setCyclePhase(index)}><span>{phase.season}</span><strong>{phase.phase}</strong></button>)}</div>
+      </div>
+      <article className={`cycle-detail ${marketCycles[lang][cyclePhase].color}`}><header><span>{String(cyclePhase + 1).padStart(2,"0")}</span><div><small>{marketCycles[lang][cyclePhase].season}</small><h2>{marketCycles[lang][cyclePhase].phase}</h2></div></header><div className="cycle-detail-grid"><section><h3>{lang === "en" ? "Economic pattern" : "Đặc điểm kinh tế"}</h3><p>{marketCycles[lang][cyclePhase].economy}</p></section><section><h3>{lang === "en" ? "Historical sector tendency" : "Xu hướng ngành trong lịch sử"}</h3><p>{marketCycles[lang][cyclePhase].sectors}</p></section><section><h3>{lang === "en" ? "Decision posture" : "Cách ra quyết định"}</h3><p>{marketCycles[lang][cyclePhase].action}</p></section></div></article>
+      <p className="cycle-caution">{lang === "en" ? "Cycles are a framework, not a clock: phase lengths vary, markets often anticipate the economy, and no sector leads every cycle." : "Chu kỳ là khung phân tích, không phải đồng hồ: độ dài mỗi giai đoạn khác nhau, thị trường thường đi trước nền kinh tế và không ngành nào luôn dẫn dắt."}</p>
+      <div className="cycle-sources"><span>{lang === "en" ? "Research:" : "Nguồn nghiên cứu:"}</span><a href="https://www.fidelity.com/viewpoints/investing-ideas/sector-investing-business-cycle" target="_blank" rel="noreferrer">Fidelity business cycle</a><a href="https://www.fidelity.com/learning-center/trading-investing/markets-sectors/intro-sector-rotation-strats" target="_blank" rel="noreferrer">Fidelity sector rotation</a><a href="https://www.schwab.com/learn/story/what-are-stock-sectors" target="_blank" rel="noreferrer">Schwab sectors</a></div>
     </section>}
 
     {page === "strategies" && <section className="content-page"><p className="eyebrow">Strategy library</p><h1>{t.strategiesTitle}</h1><div className="strategy-grid">{strategies[lang].map((s, i) => <article key={s[0]}><span>{String(i + 1).padStart(2,"0")}</span><h2>{s[0]}</h2><p>{s[1]}</p><small>{s[2]}</small></article>)}</div></section>}
