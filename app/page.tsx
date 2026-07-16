@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
 type FlowStyle = "gates" | "pipeline" | "cycle";
-type Page = "home" | "book" | "framework" | "cycles" | "strategies" | "tools";
+type Page = "home" | "book" | "framework" | "cycles" | "terminology" | "strategies" | "tools";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
@@ -62,7 +62,7 @@ function BookBlock({ block, index }: { block: Block; index: number }) {
 
 const copy = {
   en: {
-    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Strategies", "Tools"],
+    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Terminology", "Strategies", "Tools"],
     eyebrow: "A practical investing field guide",
     hero: "Think clearly before you risk capital.",
     sub: "A bilingual learning site built from Investment Experience—turning market lessons, risk rules, and trading psychology into a repeatable process.",
@@ -74,7 +74,7 @@ const copy = {
     disclaimer: "Educational content only. This site does not provide investment advice.", quote: "Protect capital first. Opportunity comes again.",
   },
   vi: {
-    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Chiến lược", "Công cụ"],
+    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Thuật ngữ", "Chiến lược", "Công cụ"],
     eyebrow: "Cẩm nang đầu tư thực chiến",
     hero: "Suy nghĩ rõ ràng trước khi mạo hiểm vốn.",
     sub: "Trang học tập song ngữ từ cuốn Kinh nghiệm đầu tư—biến bài học thị trường, nguyên tắc rủi ro và tâm lý giao dịch thành một quy trình có thể lặp lại.",
@@ -140,6 +140,79 @@ const marketCycles = {
     { season:"Mùa thu", phase:"Cuối chu kỳ", economy:"Tăng trưởng còn dương nhưng giảm tốc. Lạm phát, lãi suất, tồn kho và áp lực lên biên lợi nhuận có thể tăng.", sectors:"Năng lượng · Vật liệu · Y tế · Tiêu dùng thiết yếu · Tiện ích", action:"Nâng tiêu chuẩn chất lượng, giảm đòn bẩy quá mức và theo dõi độ rộng thị trường hoặc dự báo lợi nhuận suy yếu.", color:"cycle-late" },
     { season:"Mùa đông", phase:"Suy thoái", economy:"Hoạt động kinh tế và lợi nhuận co lại, tín dụng khan hiếm; lãi suất thường giảm khi chính sách chuyển sang hỗ trợ.", sectors:"Tiêu dùng thiết yếu · Tiện ích · Y tế · Doanh nghiệp phòng thủ", action:"Bảo vệ vốn, tránh giao dịch ép buộc và chuẩn bị danh sách theo dõi cho kỳ phục hồi tiếp theo thay vì đoán chính xác đáy.", color:"cycle-recession" },
   ],
+};
+
+const terminology = {
+  en: {
+    market: [
+      ["Priced in", "The market price already reflects a widely expected event or piece of information. Good news can arrive without another price rise if investors expected it earlier."],
+      ["ATH", "All-time high: the highest price the security or index has reached in its available trading history."],
+      ["Bull market", "A broadly rising market with optimistic sentiment; a 20% rise in a broad index is a commonly used threshold."],
+      ["Bear market", "A broadly declining market with pessimistic sentiment; a 20% fall in a broad index is a commonly used threshold."],
+      ["Correction", "A meaningful decline from a recent high that is smaller than the conventional bear-market threshold."],
+      ["Drawdown", "The percentage decline from a portfolio or security’s previous peak to a later trough."],
+      ["Volatility", "The size and frequency of price changes. Higher volatility means a wider range of possible outcomes, not only losses."],
+      ["Liquidity", "How easily shares can be traded without substantially moving the price."],
+    ],
+    trading: [
+      ["Bid", "The highest displayed price a buyer is currently willing to pay."],
+      ["Ask", "The lowest displayed price a seller is currently willing to accept."],
+      ["Spread", "The difference between the ask and bid prices; wider spreads generally increase trading friction."],
+      ["Market order", "An instruction to trade at the best currently available price. Execution is prioritized, but the final price is not guaranteed."],
+      ["Limit order", "An instruction to trade only at a specified price or better. Price is controlled, but execution is not guaranteed."],
+      ["Stop order", "An order that activates after a specified stop price is reached and then generally becomes a market order."],
+      ["Support", "A price area where buying demand has previously been strong enough to slow or reverse a decline."],
+      ["Resistance", "A price area where selling supply has previously been strong enough to slow or reverse an advance."],
+      ["Breakout", "A move beyond an established support, resistance, or chart boundary, ideally confirmed by participation such as volume."],
+      ["Long / Short", "Long means owning or gaining from a rise. Short generally means selling borrowed shares in expectation of buying them back lower."],
+    ],
+    options: [
+      ["Call", "A contract giving its buyer the right, but not the obligation, to buy the underlying at the strike price before or at expiration, depending on contract style."],
+      ["Put", "A contract giving its buyer the right, but not the obligation, to sell the underlying at the strike price before or at expiration, depending on contract style."],
+      ["Strike price", "The contract price at which the option holder may buy with a call or sell with a put."],
+      ["Premium", "The price paid by the option buyer and received by the option seller."],
+      ["Expiration", "The date after which the option contract ceases to exist."],
+      ["ITM / ATM / OTM", "In-, at-, or out-of-the-money describes the relationship between the underlying price and strike price."],
+      ["Intrinsic value", "The amount an option is in-the-money. Only in-the-money options have intrinsic value."],
+      ["Time value", "The portion of the premium above intrinsic value, reflecting time and uncertainty before expiration."],
+      ["Implied volatility", "The market’s forward-looking volatility assumption embedded in option prices; it does not predict direction."],
+    ],
+  },
+  vi: {
+    market: [
+      ["Priced in (đã phản ánh vào giá)", "Giá thị trường đã phản ánh một sự kiện hoặc thông tin được kỳ vọng rộng rãi. Tin tốt xuất hiện chưa chắc làm giá tăng thêm nếu nhà đầu tư đã dự đoán trước."],
+      ["ATH", "All-time high: mức giá cao nhất mà cổ phiếu hoặc chỉ số từng đạt trong lịch sử giao dịch hiện có."],
+      ["Thị trường bò", "Thị trường tăng diện rộng với tâm lý lạc quan; mức tăng 20% của chỉ số rộng thường được dùng làm ngưỡng tham khảo."],
+      ["Thị trường gấu", "Thị trường giảm diện rộng với tâm lý bi quan; mức giảm 20% của chỉ số rộng thường được dùng làm ngưỡng tham khảo."],
+      ["Điều chỉnh", "Một nhịp giảm đáng kể từ đỉnh gần nhất nhưng nhỏ hơn ngưỡng thị trường gấu thông thường."],
+      ["Drawdown", "Tỷ lệ giảm từ đỉnh trước đó của danh mục hoặc cổ phiếu xuống đáy sau đó."],
+      ["Biến động", "Độ lớn và tần suất thay đổi giá. Biến động cao nghĩa là phạm vi kết quả rộng hơn, không chỉ đồng nghĩa với thua lỗ."],
+      ["Thanh khoản", "Mức độ dễ dàng mua bán cổ phiếu mà không làm giá thay đổi đáng kể."],
+    ],
+    trading: [
+      ["Bid (giá mua)", "Mức giá hiển thị cao nhất mà người mua hiện sẵn sàng trả."],
+      ["Ask (giá bán)", "Mức giá hiển thị thấp nhất mà người bán hiện sẵn sàng chấp nhận."],
+      ["Spread", "Chênh lệch giữa giá ask và bid; spread rộng thường làm tăng chi phí giao dịch."],
+      ["Lệnh thị trường", "Lệnh giao dịch tại mức giá tốt nhất đang có. Ưu tiên khớp lệnh nhưng không bảo đảm giá cuối cùng."],
+      ["Lệnh giới hạn", "Lệnh chỉ giao dịch tại mức giá chỉ định hoặc tốt hơn. Kiểm soát giá nhưng không bảo đảm được khớp."],
+      ["Lệnh dừng", "Lệnh được kích hoạt khi giá chạm mức dừng, sau đó thường chuyển thành lệnh thị trường."],
+      ["Hỗ trợ", "Vùng giá nơi lực mua trước đây đủ mạnh để làm chậm hoặc đảo chiều nhịp giảm."],
+      ["Kháng cự", "Vùng giá nơi lực bán trước đây đủ mạnh để làm chậm hoặc đảo chiều nhịp tăng."],
+      ["Breakout (phá vỡ)", "Giá vượt khỏi hỗ trợ, kháng cự hoặc biên đồ thị; thường đáng tin hơn khi có khối lượng xác nhận."],
+      ["Long / Short", "Long là sở hữu hoặc hưởng lợi khi giá tăng. Short thường là bán cổ phiếu vay mượn với kỳ vọng mua lại ở giá thấp hơn."],
+    ],
+    options: [
+      ["Call", "Hợp đồng cho người mua quyền, nhưng không bắt buộc, mua tài sản cơ sở tại giá thực hiện trước hoặc vào ngày đáo hạn tùy loại hợp đồng."],
+      ["Put", "Hợp đồng cho người mua quyền, nhưng không bắt buộc, bán tài sản cơ sở tại giá thực hiện trước hoặc vào ngày đáo hạn tùy loại hợp đồng."],
+      ["Giá thực hiện", "Mức giá hợp đồng mà người nắm giữ quyền chọn có thể mua bằng call hoặc bán bằng put."],
+      ["Phí quyền chọn", "Số tiền người mua quyền chọn trả và người bán quyền chọn nhận."],
+      ["Ngày đáo hạn", "Ngày mà sau đó hợp đồng quyền chọn chấm dứt tồn tại."],
+      ["ITM / ATM / OTM", "Trong tiền, hòa vốn giá thực hiện hoặc ngoài tiền mô tả quan hệ giữa giá tài sản cơ sở và giá thực hiện."],
+      ["Giá trị nội tại", "Phần giá trị mà quyền chọn đang ở trạng thái ITM. Chỉ quyền chọn ITM có giá trị nội tại."],
+      ["Giá trị thời gian", "Phần phí quyền chọn vượt giá trị nội tại, phản ánh thời gian và bất định trước đáo hạn."],
+      ["Biến động hàm ý", "Giả định biến động tương lai được thị trường phản ánh trong giá quyền chọn; nó không dự đoán hướng giá."],
+    ],
+  },
 };
 
 export default function Home() {
@@ -215,7 +288,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
-      <nav>{(["home", "book", "framework", "cycles", "strategies", "tools"] as Page[]).map((item, i) =>
+      <nav>{(["home", "book", "framework", "cycles", "terminology", "strategies", "tools"] as Page[]).map((item, i) =>
         <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
       <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
         <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
@@ -253,6 +326,14 @@ export default function Home() {
       <article className={`cycle-detail ${marketCycles[lang][cyclePhase].color}`}><header><span>{String(cyclePhase + 1).padStart(2,"0")}</span><div><small>{marketCycles[lang][cyclePhase].season}</small><h2>{marketCycles[lang][cyclePhase].phase}</h2></div></header><div className="cycle-detail-grid"><section><h3>{lang === "en" ? "Economic pattern" : "Đặc điểm kinh tế"}</h3><p>{marketCycles[lang][cyclePhase].economy}</p></section><section><h3>{lang === "en" ? "Historical sector tendency" : "Xu hướng ngành trong lịch sử"}</h3><p>{marketCycles[lang][cyclePhase].sectors}</p></section><section><h3>{lang === "en" ? "Decision posture" : "Cách ra quyết định"}</h3><p>{marketCycles[lang][cyclePhase].action}</p></section></div></article>
       <p className="cycle-caution">{lang === "en" ? "Cycles are a framework, not a clock: phase lengths vary, markets often anticipate the economy, and no sector leads every cycle." : "Chu kỳ là khung phân tích, không phải đồng hồ: độ dài mỗi giai đoạn khác nhau, thị trường thường đi trước nền kinh tế và không ngành nào luôn dẫn dắt."}</p>
       <div className="cycle-sources"><span>{lang === "en" ? "Research:" : "Nguồn nghiên cứu:"}</span><a href="https://www.fidelity.com/viewpoints/investing-ideas/sector-investing-business-cycle" target="_blank" rel="noreferrer">Fidelity business cycle</a><a href="https://www.fidelity.com/learning-center/trading-investing/markets-sectors/intro-sector-rotation-strats" target="_blank" rel="noreferrer">Fidelity sector rotation</a><a href="https://www.schwab.com/learn/story/what-are-stock-sectors" target="_blank" rel="noreferrer">Schwab sectors</a></div>
+    </section>}
+
+    {page === "terminology" && <section className="content-page terminology-page"><p className="eyebrow">{lang === "en" ? "Market language" : "Ngôn ngữ thị trường"}</p><h1>{lang === "en" ? "Stock terminology, shown on the chart" : "Thuật ngữ chứng khoán trên biểu đồ"}</h1><p className="lede narrow">{lang === "en" ? "Learn what traders mean when they say a move is priced in, a stock reached ATH, the market turned bearish, or an option is a call or put." : "Hiểu ý nghĩa khi nhà giao dịch nói thông tin đã phản ánh vào giá, cổ phiếu đạt ATH, thị trường chuyển sang gấu hoặc quyền chọn là call hay put."}</p>
+      <div className="term-chart" role="img" aria-label={lang === "en" ? "Annotated stock price chart demonstrating common market terminology" : "Biểu đồ giá cổ phiếu minh họa các thuật ngữ thị trường phổ biến"}><svg viewBox="0 0 1000 390" aria-hidden="true"><path className="term-grid" d="M55 80H960M55 180H960M55 280H960"/><path className="price-path" d="M55 300 C120 285 150 250 205 258 S280 205 340 215 S410 125 485 112 S555 130 615 75 S670 95 705 90 S760 180 805 205 S870 260 945 285"/><path className="support-line" d="M55 300H945"/><path className="resistance-line" d="M205 215H575"/><circle cx="615" cy="75" r="9"/><text x="615" y="48" textAnchor="middle">ATH</text><text x="160" y="335">{lang === "en" ? "Bull trend" : "Xu hướng bò"}</text><text x="820" y="330">{lang === "en" ? "Bear trend" : "Xu hướng gấu"}</text><text x="385" y="200">{lang === "en" ? "Resistance" : "Kháng cự"}</text><text x="65" y="292">{lang === "en" ? "Support" : "Hỗ trợ"}</text><path className="breakout-mark" d="M470 165L505 120"/><text x="430" y="158">{lang === "en" ? "Breakout" : "Phá vỡ"}</text><path className="event-line" d="M705 90V245"/><text x="715" y="240">{lang === "en" ? "Good news arrives" : "Tin tốt xuất hiện"}</text><text x="715" y="260">{lang === "en" ? "but was priced in" : "nhưng đã phản ánh vào giá"}</text></svg></div>
+      <div className="options-explainer"><div><p className="eyebrow">{lang === "en" ? "Options at expiration" : "Quyền chọn khi đáo hạn"}</p><h2>{lang === "en" ? "Long call and long put payoff" : "Lợi nhuận của mua call và mua put"}</h2><p>{lang === "en" ? "Example strike = 100 and premium = 5. The buyer’s maximum loss is the premium in these simplified diagrams." : "Ví dụ giá thực hiện = 100 và phí = 5. Trong sơ đồ đơn giản này, khoản lỗ tối đa của người mua là phí quyền chọn."}</p></div><svg viewBox="0 0 800 330" role="img" aria-label={lang === "en" ? "Long call and long put profit at expiration" : "Lợi nhuận mua call và mua put khi đáo hạn"}><path className="payoff-axis" d="M55 165H755M400 35V290"/><path className="call-payoff" d="M70 200H400L730 55"/><path className="put-payoff" d="M70 55L400 200H730"/><path className="zero-line" d="M55 165H755"/><text x="710" y="45">CALL</text><text x="75" y="45">PUT</text><text x="410" y="318">{lang === "en" ? "Strike 100" : "Giá thực hiện 100"}</text><text x="650" y="155">{lang === "en" ? "Profit" : "Lãi"}</text><text x="650" y="220">{lang === "en" ? "Premium loss" : "Lỗ phí"}</text></svg></div>
+      <div className="term-groups">{(["market","trading","options"] as const).map(group => <section key={group}><h2>{lang === "en" ? {market:"Market and price",trading:"Trading and orders",options:"Options"}[group] : {market:"Thị trường và giá",trading:"Giao dịch và lệnh",options:"Quyền chọn"}[group]}</h2><div className="term-grid-cards">{terminology[lang][group].map(term => <article key={term[0]}><h3>{term[0]}</h3><p>{term[1]}</p></article>)}</div></section>)}</div>
+      <p className="term-warning">{lang === "en" ? "Options and short selling can involve substantial risk. These diagrams explain terminology and are not trading recommendations." : "Quyền chọn và bán khống có thể có rủi ro lớn. Các sơ đồ chỉ giải thích thuật ngữ, không phải khuyến nghị giao dịch."}</p>
+      <div className="cycle-sources"><span>{lang === "en" ? "Definitions:" : "Nguồn định nghĩa:"}</span><a href="https://www.investor.gov/introduction-investing/investing-basics/glossary" target="_blank" rel="noreferrer">Investor.gov glossary</a><a href="https://www.finra.org/investors/investing/investment-products/stocks/order-types" target="_blank" rel="noreferrer">FINRA order types</a><a href="https://www.optionseducation.org/optionsoverview/options-basics" target="_blank" rel="noreferrer">Options Industry Council</a></div>
     </section>}
 
     {page === "strategies" && <section className="content-page"><p className="eyebrow">Strategy library</p><h1>{t.strategiesTitle}</h1><div className="strategy-grid">{strategies[lang].map((s, i) => <article key={s[0]}><span>{String(i + 1).padStart(2,"0")}</span><h2>{s[0]}</h2><p>{s[1]}</p><small>{s[2]}</small></article>)}</div></section>}
