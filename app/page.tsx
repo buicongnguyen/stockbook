@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
 type FlowStyle = "gates" | "pipeline" | "cycle";
-type Page = "home" | "book" | "framework" | "cycles" | "terminology" | "strategies" | "tools";
+type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" | "strategies" | "tools";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
@@ -62,7 +62,7 @@ function BookBlock({ block, index }: { block: Block; index: number }) {
 
 const copy = {
   en: {
-    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Terminology", "Strategies", "Tools"],
+    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Fed & macro", "Terminology", "Strategies", "Tools"],
     eyebrow: "A practical investing field guide",
     hero: "Think clearly before you risk capital.",
     sub: "A bilingual learning site built from Investment Experience—turning market lessons, risk rules, and trading psychology into a repeatable process.",
@@ -74,7 +74,7 @@ const copy = {
     disclaimer: "Educational content only. This site does not provide investment advice.", quote: "Protect capital first. Opportunity comes again.",
   },
   vi: {
-    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Thuật ngữ", "Chiến lược", "Công cụ"],
+    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Fed & Vĩ mô", "Thuật ngữ", "Chiến lược", "Công cụ"],
     eyebrow: "Cẩm nang đầu tư thực chiến",
     hero: "Suy nghĩ rõ ràng trước khi mạo hiểm vốn.",
     sub: "Trang học tập song ngữ từ cuốn Kinh nghiệm đầu tư—biến bài học thị trường, nguyên tắc rủi ro và tâm lý giao dịch thành một quy trình có thể lặp lại.",
@@ -215,11 +215,27 @@ const terminology = {
   },
 };
 
+const macroScenarios = {
+  en: [
+    { name:"Hot economy", inputs:"Inflation rising · Labor market tight", fed:"Restrictive bias: raise rates or keep them high for longer", stocks:"Higher discount rates and borrowing costs can pressure valuations, especially rate-sensitive growth stocks. Strong earnings may partly offset this.", gold:"Higher real yields can increase gold’s opportunity cost, but inflation fear or geopolitical demand may offset the pressure.", tone:"macro-hot" },
+    { name:"Soft landing", inputs:"Inflation falling · Employment stable", fed:"Neutral to gradual easing if inflation continues toward target", stocks:"Falling inflation without a sharp earnings decline can support valuations and broader risk appetite.", gold:"Lower expected real yields can help, although calmer risk conditions may reduce safe-haven demand.", tone:"macro-soft" },
+    { name:"Recession risk", inputs:"Inflation subdued · Unemployment rising", fed:"Easing bias: lower rates to support demand and employment", stocks:"Rate cuts may support valuation, but weak profits and recession risk can dominate first. Markets often react before economic data turns.", gold:"Lower real yields and risk aversion can support gold, though currency and liquidity conditions still matter.", tone:"macro-weak" },
+    { name:"Stagflation", inputs:"Inflation high · Employment weakening", fed:"Policy conflict: price stability and employment risks pull in opposite directions", stocks:"High rates plus weak growth can pressure both valuations and earnings, making selection and risk control especially important.", gold:"Inflation and risk concerns may support gold, while high real yields can work in the opposite direction.", tone:"macro-stag" },
+  ],
+  vi: [
+    { name:"Kinh tế quá nóng", inputs:"Lạm phát tăng · Thị trường lao động thắt chặt", fed:"Thiên hướng thắt chặt: tăng lãi suất hoặc giữ cao lâu hơn", stocks:"Lãi suất chiết khấu và chi phí vay cao có thể gây áp lực lên định giá, đặc biệt với cổ phiếu tăng trưởng nhạy cảm lãi suất. Lợi nhuận khỏe có thể bù đắp một phần.", gold:"Lợi suất thực cao làm tăng chi phí cơ hội nắm giữ vàng, nhưng lo ngại lạm phát hoặc nhu cầu trú ẩn có thể bù lại.", tone:"macro-hot" },
+    { name:"Hạ cánh mềm", inputs:"Lạm phát giảm · Việc làm ổn định", fed:"Trung lập hoặc giảm dần nếu lạm phát tiếp tục về mục tiêu", stocks:"Lạm phát giảm mà lợi nhuận không suy yếu mạnh có thể hỗ trợ định giá và khẩu vị rủi ro.", gold:"Kỳ vọng lợi suất thực giảm có thể hỗ trợ vàng, dù môi trường ít rủi ro hơn có thể làm giảm nhu cầu trú ẩn.", tone:"macro-soft" },
+    { name:"Rủi ro suy thoái", inputs:"Lạm phát thấp · Thất nghiệp tăng", fed:"Thiên hướng nới lỏng: giảm lãi suất để hỗ trợ nhu cầu và việc làm", stocks:"Giảm lãi suất có thể hỗ trợ định giá, nhưng lợi nhuận yếu và rủi ro suy thoái có thể chi phối trước. Thị trường thường phản ứng trước dữ liệu kinh tế.", gold:"Lợi suất thực giảm và tâm lý né rủi ro có thể hỗ trợ vàng, nhưng đồng USD và thanh khoản vẫn quan trọng.", tone:"macro-weak" },
+    { name:"Đình lạm", inputs:"Lạm phát cao · Việc làm suy yếu", fed:"Xung đột chính sách: ổn định giá và rủi ro việc làm kéo theo hai hướng", stocks:"Lãi suất cao cùng tăng trưởng yếu có thể gây áp lực lên cả định giá và lợi nhuận, khiến chọn lọc và quản trị rủi ro đặc biệt quan trọng.", gold:"Lo ngại lạm phát và rủi ro có thể hỗ trợ vàng, trong khi lợi suất thực cao tác động theo hướng ngược lại.", tone:"macro-stag" },
+  ],
+};
+
 export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
   const [theme, setTheme] = useState<Theme>("light");
   const [flowStyle, setFlowStyle] = useState<FlowStyle>("gates");
   const [cyclePhase, setCyclePhase] = useState(0);
+  const [macroScenario, setMacroScenario] = useState(0);
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState(0);
@@ -288,7 +304,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
-      <nav>{(["home", "book", "framework", "cycles", "terminology", "strategies", "tools"] as Page[]).map((item, i) =>
+      <nav>{(["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "tools"] as Page[]).map((item, i) =>
         <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
       <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
         <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
@@ -326,6 +342,14 @@ export default function Home() {
       <article className={`cycle-detail ${marketCycles[lang][cyclePhase].color}`}><header><span>{String(cyclePhase + 1).padStart(2,"0")}</span><div><small>{marketCycles[lang][cyclePhase].season}</small><h2>{marketCycles[lang][cyclePhase].phase}</h2></div></header><div className="cycle-detail-grid"><section><h3>{lang === "en" ? "Economic pattern" : "Đặc điểm kinh tế"}</h3><p>{marketCycles[lang][cyclePhase].economy}</p></section><section><h3>{lang === "en" ? "Historical sector tendency" : "Xu hướng ngành trong lịch sử"}</h3><p>{marketCycles[lang][cyclePhase].sectors}</p></section><section><h3>{lang === "en" ? "Decision posture" : "Cách ra quyết định"}</h3><p>{marketCycles[lang][cyclePhase].action}</p></section></div></article>
       <p className="cycle-caution">{lang === "en" ? "Cycles are a framework, not a clock: phase lengths vary, markets often anticipate the economy, and no sector leads every cycle." : "Chu kỳ là khung phân tích, không phải đồng hồ: độ dài mỗi giai đoạn khác nhau, thị trường thường đi trước nền kinh tế và không ngành nào luôn dẫn dắt."}</p>
       <div className="cycle-sources"><span>{lang === "en" ? "Research:" : "Nguồn nghiên cứu:"}</span><a href="https://www.fidelity.com/viewpoints/investing-ideas/sector-investing-business-cycle" target="_blank" rel="noreferrer">Fidelity business cycle</a><a href="https://www.fidelity.com/learning-center/trading-investing/markets-sectors/intro-sector-rotation-strats" target="_blank" rel="noreferrer">Fidelity sector rotation</a><a href="https://www.schwab.com/learn/story/what-are-stock-sectors" target="_blank" rel="noreferrer">Schwab sectors</a></div>
+    </section>}
+
+    {page === "macro" && <section className="content-page macro-page"><p className="eyebrow">{lang === "en" ? "Macro transmission" : "Cơ chế truyền dẫn vĩ mô"}</p><h1>{lang === "en" ? "Fed rates, inflation, jobs, stocks, and gold" : "Lãi suất Fed, lạm phát, việc làm, cổ phiếu và vàng"}</h1><p className="lede narrow">{lang === "en" ? "The Fed reacts to inflation and employment, while markets react to both the decision and what it reveals about the economy. The relationships are conditional, not mechanical." : "Fed phản ứng với lạm phát và việc làm, còn thị trường phản ứng với cả quyết định lẫn thông tin quyết định đó tiết lộ về nền kinh tế. Các quan hệ có điều kiện, không máy móc."}</p>
+      <div className="macro-flow" role="img" aria-label={lang === "en" ? "Inflation and employment feed into Fed policy, financial conditions, stocks and gold" : "Lạm phát và việc làm tác động đến chính sách Fed, điều kiện tài chính, cổ phiếu và vàng"}><div className="macro-inputs"><article><span>CPI / PCE</span><h3>{lang === "en" ? "Inflation" : "Lạm phát"}</h3><p>{lang === "en" ? "Price pressure and expectations" : "Áp lực giá và kỳ vọng"}</p></article><article><span>NFP / U-3</span><h3>{lang === "en" ? "Employment" : "Việc làm"}</h3><p>{lang === "en" ? "Jobs, unemployment, wages" : "Việc làm, thất nghiệp, tiền lương"}</p></article></div><div className="macro-arrow">↓</div><article className="fed-node"><span>FOMC</span><h2>{lang === "en" ? "Federal Reserve decision" : "Quyết định của Fed"}</h2><p>{lang === "en" ? "Maximum employment + price stability" : "Việc làm tối đa + ổn định giá"}</p></article><div className="macro-arrow">↓</div><article className="conditions-node"><h3>{lang === "en" ? "Rates and financial conditions" : "Lãi suất và điều kiện tài chính"}</h3><p>{lang === "en" ? "Borrowing costs · Discount rates · Dollar · Credit · Liquidity · Real yields" : "Chi phí vay · Lãi suất chiết khấu · USD · Tín dụng · Thanh khoản · Lợi suất thực"}</p></article><div className="macro-arrow split">↙ ↓ ↘</div><div className="macro-outcomes"><article><h3>{lang === "en" ? "Stocks" : "Cổ phiếu"}</h3><p>{lang === "en" ? "Valuation, earnings, risk premium" : "Định giá, lợi nhuận, phần bù rủi ro"}</p></article><article><h3>{lang === "en" ? "Economy and jobs" : "Kinh tế và việc làm"}</h3><p>{lang === "en" ? "Demand, investment, hiring" : "Nhu cầu, đầu tư, tuyển dụng"}</p></article><article><h3>{lang === "en" ? "Gold" : "Vàng"}</h3><p>{lang === "en" ? "Real yields, dollar, inflation, risk" : "Lợi suất thực, USD, lạm phát, rủi ro"}</p></article></div></div>
+      <div className="macro-scenarios"><p className="eyebrow">{lang === "en" ? "Choose a scenario" : "Chọn kịch bản"}</p><div className="macro-tabs">{macroScenarios[lang].map((scenario,index) => <button key={scenario.name} className={macroScenario === index ? "selected" : ""} aria-pressed={macroScenario === index} onClick={() => setMacroScenario(index)}>{scenario.name}</button>)}</div><article className={`macro-scenario ${macroScenarios[lang][macroScenario].tone}`}><header><span>{macroScenarios[lang][macroScenario].inputs}</span><h2>{macroScenarios[lang][macroScenario].name}</h2></header><div><section><h3>FED</h3><p>{macroScenarios[lang][macroScenario].fed}</p></section><section><h3>{lang === "en" ? "STOCKS" : "CỔ PHIẾU"}</h3><p>{macroScenarios[lang][macroScenario].stocks}</p></section><section><h3>{lang === "en" ? "GOLD" : "VÀNG"}</h3><p>{macroScenarios[lang][macroScenario].gold}</p></section></div></article></div>
+      <div className="macro-definitions"><article><h3>CPI</h3><p>{lang === "en" ? "BLS measure of average price change for a representative consumer basket." : "Thước đo BLS về mức thay đổi giá trung bình của một rổ hàng hóa và dịch vụ tiêu dùng đại diện."}</p></article><article><h3>PCE</h3><p>{lang === "en" ? "The inflation index used for the Fed’s 2% longer-run goal." : "Chỉ số lạm phát được Fed sử dụng cho mục tiêu dài hạn 2%."}</p></article><article><h3>{lang === "en" ? "Unemployment rate" : "Tỷ lệ thất nghiệp"}</h3><p>{lang === "en" ? "Unemployed people as a percentage of the labor force—not the entire population." : "Số người thất nghiệp tính theo phần trăm lực lượng lao động, không phải toàn bộ dân số."}</p></article><article><h3>{lang === "en" ? "Real yield" : "Lợi suất thực"}</h3><p>{lang === "en" ? "A yield after accounting for inflation expectations; an important opportunity-cost input for gold." : "Lợi suất sau khi tính đến kỳ vọng lạm phát; một yếu tố chi phí cơ hội quan trọng đối với vàng."}</p></article></div>
+      <p className="macro-warning">{lang === "en" ? "A rate cut is not automatically bullish and a rate hike is not automatically bearish. Markets price expectations in advance, and the reason for the policy change can matter more than the change itself." : "Giảm lãi suất không tự động đồng nghĩa tăng giá và tăng lãi suất không tự động đồng nghĩa giảm giá. Thị trường phản ánh kỳ vọng trước, và nguyên nhân thay đổi chính sách có thể quan trọng hơn bản thân thay đổi."}</p>
+      <div className="cycle-sources"><span>{lang === "en" ? "Research:" : "Nguồn nghiên cứu:"}</span><a href="https://www.federalreserve.gov/monetarypolicy/monetary-policy-what-are-its-goals-how-does-it-work.htm" target="_blank" rel="noreferrer">Federal Reserve</a><a href="https://www.bls.gov/cpi/questions-and-answers.htm" target="_blank" rel="noreferrer">BLS CPI</a><a href="https://www.bls.gov/cps/definitions.htm" target="_blank" rel="noreferrer">BLS employment</a><a href="https://www.gold.org/goldhub/research/gold-and-us-interest-rates-reality-check" target="_blank" rel="noreferrer">World Gold Council</a></div>
     </section>}
 
     {page === "terminology" && <section className="content-page terminology-page"><p className="eyebrow">{lang === "en" ? "Market language" : "Ngôn ngữ thị trường"}</p><h1>{lang === "en" ? "Stock terminology, shown on the chart" : "Thuật ngữ chứng khoán trên biểu đồ"}</h1><p className="lede narrow">{lang === "en" ? "Learn what traders mean when they say a move is priced in, a stock reached ATH, the market turned bearish, or an option is a call or put." : "Hiểu ý nghĩa khi nhà giao dịch nói thông tin đã phản ánh vào giá, cổ phiếu đạt ATH, thị trường chuyển sang gấu hoặc quyền chọn là call hay put."}</p>
