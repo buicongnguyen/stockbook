@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
 type FlowStyle = "gates" | "pipeline" | "cycle";
-type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" | "strategies" | "tools";
+type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" | "strategies" | "research" | "tools";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
@@ -62,7 +62,7 @@ function BookBlock({ block, index }: { block: Block; index: number }) {
 
 const copy = {
   en: {
-    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Fed & macro", "Terminology", "Strategies", "Tools"],
+    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Fed & macro", "Terminology", "Strategies", "Data lab", "Tools"],
     eyebrow: "A practical investing field guide",
     hero: "Think clearly before you risk capital.",
     sub: "A bilingual learning site built from Investment Experience—turning market lessons, risk rules, and trading psychology into a repeatable process.",
@@ -74,7 +74,7 @@ const copy = {
     disclaimer: "Educational content only. This site does not provide investment advice.", quote: "Protect capital first. Opportunity comes again.",
   },
   vi: {
-    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Fed & Vĩ mô", "Thuật ngữ", "Chiến lược", "Công cụ"],
+    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Fed & Vĩ mô", "Thuật ngữ", "Chiến lược", "Dữ liệu", "Công cụ"],
     eyebrow: "Cẩm nang đầu tư thực chiến",
     hero: "Suy nghĩ rõ ràng trước khi mạo hiểm vốn.",
     sub: "Trang học tập song ngữ từ cuốn Kinh nghiệm đầu tư—biến bài học thị trường, nguyên tắc rủi ro và tâm lý giao dịch thành một quy trình có thể lặp lại.",
@@ -215,6 +215,94 @@ const terminology = {
   },
 };
 
+const chartBars = [
+  [96,100,94,99,35], [99,104,98,103,42], [103,108,102,107,48], [107,112,105,110,52],
+  [110,115,109,114,50], [114,117,110,112,38], [112,115,108,110,34], [110,114,109,113,31],
+  [113,116,111,114,29], [114,117,112,115,25], [115,117,113,114,22], [114,116,112.5,115,18],
+  [115,117,114,116,16], [116,119,115,118,22], [118,127,117,126,75], [126,132,124,130,65],
+  [130,134,128,132,50], [132,136,130,134,46],
+];
+
+function chartBarX(index: number) { return 70 + index * 48; }
+function chartPriceY(price: number) { return 300 - (price - 92) * 5; }
+
+const chartLessons = {
+  en: [
+    { title:"1 · Read the candle", inspect:"Open and close form the body; high and low form the wick. Start on the weekly chart for context, then use the daily chart for the setup.", decision:"A candle is evidence for one period—not a prediction by itself." },
+    { title:"2 · Confirm the trend", inspect:"Look for price above rising moving averages, with the faster average above the slower one. Compare relative strength with the market too.", decision:"If trend and market stage disagree, wait instead of forcing a trade." },
+    { title:"3 · Map the structure", inspect:"Mark zones, not exact pennies. This example tightens below a pivot while pullbacks and volume become smaller—a VCP-style base.", decision:"The structure defines where the idea is valid and where it fails." },
+    { title:"4 · Demand confirmation", inspect:"A close above the pivot is stronger when volume expands materially above normal. Price shows direction; volume shows participation.", decision:"Low-volume breakouts are easier to fake. Do not use volume alone." },
+    { title:"5 · Plan risk first", inspect:"Choose the entry trigger, invalidation level, stop, target, and position size before buying. Stops can slip in fast or illiquid markets.", decision:"Pass when the potential reward does not justify the defined risk." },
+  ],
+  vi: [
+    { title:"1 · Đọc cây nến", inspect:"Giá mở và đóng tạo thân nến; giá cao và thấp tạo bóng nến. Bắt đầu bằng biểu đồ tuần để hiểu bối cảnh, sau đó dùng biểu đồ ngày cho mẫu hình.", decision:"Một cây nến chỉ là bằng chứng của một giai đoạn, không tự nó dự đoán tương lai." },
+    { title:"2 · Xác nhận xu hướng", inspect:"Tìm giá nằm trên các đường trung bình đang dốc lên, với đường nhanh nằm trên đường chậm. Đồng thời so sánh sức mạnh tương đối với thị trường.", decision:"Nếu xu hướng và giai đoạn thị trường mâu thuẫn, hãy chờ thay vì ép giao dịch." },
+    { title:"3 · Vẽ cấu trúc", inspect:"Đánh dấu vùng thay vì một mức giá tuyệt đối. Ví dụ này siết chặt dưới pivot khi nhịp điều chỉnh và khối lượng nhỏ dần—một nền giá kiểu VCP.", decision:"Cấu trúc xác định khi nào luận điểm còn đúng và khi nào đã sai." },
+    { title:"4 · Đòi hỏi xác nhận", inspect:"Giá đóng cửa vượt pivot đáng tin hơn khi khối lượng tăng rõ rệt so với bình thường. Giá cho biết hướng; khối lượng cho biết mức tham gia.", decision:"Breakout khối lượng thấp dễ là cú phá vỡ giả. Không dùng riêng khối lượng." },
+    { title:"5 · Lập kế hoạch rủi ro", inspect:"Xác định điểm kích hoạt, mức vô hiệu, stop, mục tiêu và quy mô vị thế trước khi mua. Stop có thể trượt trong thị trường nhanh hoặc kém thanh khoản.", decision:"Bỏ qua khi lợi nhuận tiềm năng không xứng đáng với rủi ro đã xác định." },
+  ],
+};
+
+const bookResearchTopics = {
+  en: [
+    { book:"Investment Experience", focus:"Chart literacy", detail:"Moving averages, support and resistance, candlesticks, patterns, volume and OBV—plus the warning that indicator overload creates conflicting signals." },
+    { book:"SEPA / Mark Minervini", focus:"A repeatable setup", detail:"Market stage → Trend Template → VCP contraction → pivot breakout with volume → predefined stop and portfolio risk." },
+    { book:"AI Data Center Bottlenecks", focus:"Thematic research", detail:"Trace physical bottlenecks, suppliers, capacity, customers and valuation; then verify the story in filings and operating data." },
+  ],
+  vi: [
+    { book:"Kinh nghiệm đầu tư", focus:"Hiểu biểu đồ", detail:"MA, hỗ trợ và kháng cự, nến Nhật, mẫu hình, khối lượng và OBV—cùng cảnh báo rằng quá nhiều chỉ báo sẽ tạo tín hiệu mâu thuẫn." },
+    { book:"SEPA / Mark Minervini", focus:"Mẫu hình lặp lại được", detail:"Giai đoạn thị trường → Trend Template → VCP co hẹp → breakout pivot có khối lượng → stop và rủi ro danh mục định trước." },
+    { book:"Điểm nghẽn AI Data Center", focus:"Nghiên cứu theo chủ đề", detail:"Lần theo điểm nghẽn vật lý, nhà cung cấp, công suất, khách hàng và định giá; sau đó xác minh câu chuyện bằng báo cáo và dữ liệu vận hành." },
+  ],
+};
+
+const researchCatalog = {
+  en: {
+    web: [
+      { name:"TradingView Basic", access:"Free plan", use:"Interactive charts, watchlists, two indicators per chart and community scripts. Good for the book’s price/volume workflow.", caution:"Exchange data entitlements and advanced features vary by market and plan.", href:"https://www.tradingview.com/pricing/" },
+      { name:"FINVIZ", access:"Free web screener", use:"Quick fundamental and technical screening for NYSE, Nasdaq and AMEX stocks.", caution:"Free and paid capabilities differ; verify figures against filings before making a decision.", href:"https://finviz.com/screener.ashx" },
+      { name:"SEC EDGAR + FRED", access:"Free official sources", use:"EDGAR for US filings and XBRL facts; FRED for rates, inflation, employment and other macro series.", caution:"They answer different questions and do not replace a live market-price feed.", href:"https://www.sec.gov/search-filings" },
+      { name:"Yahoo Finance", access:"Free web research", use:"Convenient quotes, charts, news and company summaries for exploratory research.", caution:"Yahoo does not offer the open, supported public API many developers assume it does.", href:"https://finance.yahoo.com/" },
+      { name:"FireAnt", access:"Vietnam web / app", use:"The book’s Vietnam-market example for charts, disclosures, news and stock research.", caution:"Check current plan, data delay and terms before relying on any feature or automation.", href:"https://fireant.vn/" },
+    ],
+    open: [
+      { name:"OpenBB Open Data Platform", license:"AGPL-3.0", use:"Python data integration layer that connects public, licensed and proprietary providers and can expose a local REST API.", caution:"Open source software does not make every connected dataset free or redistributable.", href:"https://github.com/OpenBB-finance/OpenBB" },
+      { name:"yfinance", license:"Apache-2.0", use:"Easy Python access to Yahoo Finance data for personal research and education.", caution:"Unofficial and not endorsed by Yahoo; endpoints can change and the downloaded data remains subject to Yahoo’s terms.", href:"https://github.com/ranaroussi/yfinance" },
+      { name:"QuantConnect LEAN", license:"Open-source engine", use:"Research, backtesting and live algorithm execution in Python or C# on your own infrastructure.", caution:"The engine is open source; clean point-in-time data and brokerage connections are separate concerns.", href:"https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/algorithm-engine" },
+      { name:"Lightweight Charts", license:"Open-source chart library", use:"Build interactive candlestick, price and volume charts in a website.", caution:"It renders charts but supplies no market data; public use requires TradingView attribution.", href:"https://tradingview.github.io/lightweight-charts/" },
+    ],
+    api: [
+      { name:"SEC EDGAR", data:"US filings, submissions and XBRL company facts", access:"Public JSON · no key", limit:"Use a declared User-Agent; SEC guideline is no more than 10 requests/second.", fit:"Fundamental verification", href:"https://www.sec.gov/search-filings/edgar-application-programming-interfaces" },
+      { name:"FRED", data:"Rates, CPI/PCE, employment and economic time series", access:"Free account API key", limit:"REST returns JSON or XML; follow series licensing and FRED attribution terms.", fit:"Macro dashboard", href:"https://fred.stlouisfed.org/docs/api/fred/" },
+      { name:"Alpha Vantage", data:"Equities, FX, crypto, fundamentals and indicators", access:"Free API key", limit:"Free service currently covers most datasets up to 25 requests/day.", fit:"Small prototypes", href:"https://www.alphavantage.co/support/" },
+      { name:"Twelve Data", data:"Prices, reference data and technical indicators", access:"Free Basic plan", limit:"Currently 8 API credits/minute and 800/day for personal, internal, non-commercial use.", fit:"Higher-frequency prototypes", href:"https://twelvedata.com/pricing" },
+    ],
+    steps: ["Choose the data—not the app: filings, macro, delayed prices, real-time prices, or fundamentals.", "Open the provider’s official developer or pricing page, create an account if required, and read market/redistribution terms.", "Create the key and keep it in a server secret or CI secret. Never commit it or place it in browser JavaScript.", "Fetch through a backend or scheduled job, then validate timestamps, time zones, splits, dividends, missing values and rate limits.", "Cache and normalize the result before sending only the fields the chart needs to the browser."],
+  },
+  vi: {
+    web: [
+      { name:"TradingView Basic", access:"Gói miễn phí", use:"Biểu đồ tương tác, watchlist, hai chỉ báo trên mỗi biểu đồ và script cộng đồng. Phù hợp quy trình giá/khối lượng trong sách.", caution:"Quyền dữ liệu sàn và tính năng nâng cao khác nhau theo thị trường và gói.", href:"https://www.tradingview.com/pricing/" },
+      { name:"FINVIZ", access:"Bộ lọc web miễn phí", use:"Lọc nhanh cơ bản và kỹ thuật cho cổ phiếu NYSE, Nasdaq và AMEX.", caution:"Tính năng miễn phí và trả phí khác nhau; luôn đối chiếu số liệu với báo cáo gốc.", href:"https://finviz.com/screener.ashx" },
+      { name:"SEC EDGAR + FRED", access:"Nguồn chính thức miễn phí", use:"EDGAR cho báo cáo và dữ liệu XBRL Mỹ; FRED cho lãi suất, lạm phát, việc làm và dữ liệu vĩ mô.", caution:"Hai nguồn trả lời câu hỏi khác nhau và không thay thế nguồn giá thị trường trực tiếp.", href:"https://www.sec.gov/search-filings" },
+      { name:"Yahoo Finance", access:"Nghiên cứu web miễn phí", use:"Thuận tiện để xem giá, biểu đồ, tin tức và tóm tắt doanh nghiệp khi nghiên cứu ban đầu.", caution:"Yahoo không cung cấp API công khai, được hỗ trợ theo cách nhiều lập trình viên vẫn tưởng.", href:"https://finance.yahoo.com/" },
+      { name:"FireAnt", access:"Web / app Việt Nam", use:"Ví dụ trong sách cho biểu đồ, công bố, tin tức và nghiên cứu cổ phiếu Việt Nam.", caution:"Kiểm tra gói, độ trễ dữ liệu và điều khoản hiện tại trước khi phụ thuộc vào tính năng hay tự động hóa.", href:"https://fireant.vn/" },
+    ],
+    open: [
+      { name:"OpenBB Open Data Platform", license:"AGPL-3.0", use:"Lớp tích hợp dữ liệu Python kết nối nguồn công khai, có giấy phép và độc quyền; có thể mở REST API cục bộ.", caution:"Phần mềm mã nguồn mở không biến mọi dữ liệu kết nối thành miễn phí hoặc được phép phân phối lại.", href:"https://github.com/OpenBB-finance/OpenBB" },
+      { name:"yfinance", license:"Apache-2.0", use:"Truy cập dữ liệu Yahoo Finance bằng Python cho nghiên cứu cá nhân và giáo dục.", caution:"Không chính thức và không được Yahoo chứng thực; endpoint có thể thay đổi và dữ liệu vẫn chịu điều khoản của Yahoo.", href:"https://github.com/ranaroussi/yfinance" },
+      { name:"QuantConnect LEAN", license:"Engine mã nguồn mở", use:"Nghiên cứu, backtest và chạy thuật toán bằng Python hoặc C# trên hạ tầng riêng.", caution:"Engine là mã nguồn mở; dữ liệu point-in-time sạch và kết nối môi giới là vấn đề riêng.", href:"https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/algorithm-engine" },
+      { name:"Lightweight Charts", license:"Thư viện biểu đồ mã nguồn mở", use:"Xây biểu đồ nến, giá và khối lượng tương tác trên website.", caution:"Thư viện chỉ vẽ biểu đồ, không cung cấp dữ liệu; sử dụng công khai phải ghi nguồn TradingView.", href:"https://tradingview.github.io/lightweight-charts/" },
+    ],
+    api: [
+      { name:"SEC EDGAR", data:"Báo cáo, lịch sử nộp và dữ liệu XBRL doanh nghiệp Mỹ", access:"JSON công khai · không cần key", limit:"Khai báo User-Agent; hướng dẫn SEC giới hạn không quá 10 yêu cầu/giây.", fit:"Xác minh cơ bản", href:"https://www.sec.gov/search-filings/edgar-application-programming-interfaces" },
+      { name:"FRED", data:"Lãi suất, CPI/PCE, việc làm và chuỗi dữ liệu kinh tế", access:"API key tài khoản miễn phí", limit:"REST trả JSON hoặc XML; tuân thủ giấy phép chuỗi dữ liệu và điều khoản ghi nguồn FRED.", fit:"Dashboard vĩ mô", href:"https://fred.stlouisfed.org/docs/api/fred/" },
+      { name:"Alpha Vantage", data:"Cổ phiếu, FX, crypto, cơ bản và chỉ báo", access:"API key miễn phí", limit:"Dịch vụ miễn phí hiện bao phủ phần lớn bộ dữ liệu, tối đa 25 yêu cầu/ngày.", fit:"Nguyên mẫu nhỏ", href:"https://www.alphavantage.co/support/" },
+      { name:"Twelve Data", data:"Giá, dữ liệu tham chiếu và chỉ báo kỹ thuật", access:"Gói Basic miễn phí", limit:"Hiện 8 API credit/phút và 800/ngày cho mục đích cá nhân, nội bộ, phi thương mại.", fit:"Nguyên mẫu tần suất cao hơn", href:"https://twelvedata.com/pricing" },
+    ],
+    steps: ["Chọn loại dữ liệu, không chọn app trước: báo cáo, vĩ mô, giá trễ, giá thời gian thực hay dữ liệu cơ bản.", "Mở trang developer hoặc bảng giá chính thức, tạo tài khoản nếu cần và đọc điều khoản thị trường/phân phối lại.", "Tạo key và lưu trong secret phía server hoặc CI. Không commit và không đặt key trong JavaScript chạy trên trình duyệt.", "Lấy dữ liệu qua backend hoặc tác vụ định kỳ, rồi kiểm tra timestamp, múi giờ, chia tách, cổ tức, dữ liệu thiếu và giới hạn gọi.", "Cache và chuẩn hóa kết quả trước khi chỉ gửi các trường biểu đồ cần xuống trình duyệt."],
+  },
+};
+
 const macroScenarios = {
   en: [
     { name:"Hot economy", inputs:"Inflation rising · Labor market tight", fed:"Restrictive bias: raise rates or keep them high for longer", stocks:"Higher discount rates and borrowing costs can pressure valuations, especially rate-sensitive growth stocks. Strong earnings may partly offset this.", gold:"Higher real yields can increase gold’s opportunity cost, but inflation fear or geopolitical demand may offset the pressure.", tone:"macro-hot" },
@@ -237,6 +325,7 @@ export default function Home() {
   const [cyclePhase, setCyclePhase] = useState(0);
   const [macroScenario, setMacroScenario] = useState(0);
   const [strategyIndex, setStrategyIndex] = useState(0);
+  const [chartLessonIndex, setChartLessonIndex] = useState(0);
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
   const [chapter, setChapter] = useState(0);
@@ -305,7 +394,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
-      <nav>{(["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "tools"] as Page[]).map((item, i) =>
+      <nav>{(["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "research", "tools"] as Page[]).map((item, i) =>
         <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
       <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
         <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
@@ -367,6 +456,37 @@ export default function Home() {
       <article className={`strategy-detail ${strategyIndex === 3 ? "day-trade-detail" : ""}`}><header><span>{String(strategyIndex + 1).padStart(2,"0")}</span><div><small>{strategyProfiles[lang][strategyIndex].horizon} · {strategyProfiles[lang][strategyIndex].workload}</small><h2>{strategyProfiles[lang][strategyIndex].name}</h2></div></header><div className="strategy-detail-grid"><section><h3>{lang === "en" ? "Potential benefit" : "Lợi ích tiềm năng"}</h3><p>{strategyProfiles[lang][strategyIndex].benefit}</p></section><section><h3>{lang === "en" ? "Main risks" : "Rủi ro chính"}</h3><p>{strategyProfiles[lang][strategyIndex].risk}</p></section><section><h3>{lang === "en" ? "Who it may fit" : "Có thể phù hợp với ai"}</h3><p>{strategyProfiles[lang][strategyIndex].fit}</p></section><section><h3>{lang === "en" ? "Minimum safeguards" : "Hàng rào tối thiểu"}</h3><p>{strategyProfiles[lang][strategyIndex].rules}</p></section></div></article>
       {strategyIndex === 3 && <div className="day-trade-warning"><strong>{lang === "en" ? "Day trading is not a shortcut." : "Day trading không phải đường tắt."}</strong><p>{lang === "en" ? "FINRA says it can be extremely risky and generally is not appropriate for people with limited resources, limited experience, or low risk tolerance. Leverage and short selling can produce losses beyond the original amount invested." : "FINRA cho biết day trading có thể cực kỳ rủi ro và nhìn chung không phù hợp với người có nguồn lực hạn chế, ít kinh nghiệm hoặc khả năng chịu rủi ro thấp. Đòn bẩy và bán khống có thể gây lỗ vượt số vốn ban đầu."}</p></div>}
       <div className="strategy-sources cycle-sources"><span>{lang === "en" ? "Research:" : "Nguồn nghiên cứu:"}</span><a href="https://www.finra.org/rules-guidance/rulebooks/finra-rules/2270" target="_blank" rel="noreferrer">FINRA day trading risks</a><a href="https://www.investor.gov/additional-resources/spotlight/formerdirectorlorischock-directors-take/thinking-day-trading-know-risks" target="_blank" rel="noreferrer">Investor.gov day trading</a><a href="https://www.schwab.com/learn/story/swing-trading-strategies" target="_blank" rel="noreferrer">Schwab swing trading</a><a href="https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins-24" target="_blank" rel="noreferrer">Investor.gov ETFs</a></div>
+    </section>}
+
+    {page === "research" && <section className="content-page research-page"><p className="eyebrow">{lang === "en" ? "Book → evidence → decision" : "Sách → bằng chứng → quyết định"}</p><h1>{lang === "en" ? "Read charts, choose tools, and obtain data safely" : "Đọc biểu đồ, chọn công cụ và lấy dữ liệu an toàn"}</h1><p className="lede narrow">{lang === "en" ? "The books are strongest when their ideas become a verifiable research workflow. This guide separates charting software, analysis engines, and licensed data—the three are not the same thing." : "Các cuốn sách hữu ích nhất khi ý tưởng trở thành quy trình nghiên cứu có thể xác minh. Hướng dẫn này tách riêng phần mềm biểu đồ, engine phân tích và dữ liệu có giấy phép—ba thứ không giống nhau."}</p>
+      <div className="book-topic-grid">{bookResearchTopics[lang].map((topic,index) => <article key={topic.book}><span>{String(index + 1).padStart(2,"0")}</span><small>{topic.book}</small><h2>{topic.focus}</h2><p>{topic.detail}</p></article>)}</div>
+
+      <section className="chart-lab"><div className="section-intro"><p className="eyebrow">{lang === "en" ? "Interactive chart lesson" : "Bài học biểu đồ tương tác"}</p><h2>{lang === "en" ? "Read in layers, not from one indicator" : "Đọc theo từng lớp, không dựa vào một chỉ báo"}</h2><p>{lang === "en" ? "Synthetic daily example for education. Select a layer to see what the books ask you to inspect." : "Ví dụ ngày giả lập cho giáo dục. Chọn một lớp để xem các cuốn sách yêu cầu kiểm tra điều gì."}</p></div>
+        <div className="chart-lesson-tabs">{chartLessons[lang].map((lesson,index) => <button key={lesson.title} className={chartLessonIndex === index ? "selected" : ""} aria-pressed={chartLessonIndex === index} onClick={() => setChartLessonIndex(index)}>{lesson.title}</button>)}</div>
+        <div className={`chart-reader lesson-${chartLessonIndex}`}>
+          <svg viewBox="0 0 1000 470" role="img" aria-labelledby="chart-reader-title chart-reader-desc"><title id="chart-reader-title">{lang === "en" ? "Annotated price and volume chart" : "Biểu đồ giá và khối lượng có chú thích"}</title><desc id="chart-reader-desc">{lang === "en" ? "Daily candlesticks trend above moving averages, tighten into a base, and break above a pivot with increased volume." : "Nến ngày tăng trên đường trung bình, siết lại trong nền giá rồi vượt pivot với khối lượng tăng."}</desc>
+            <path className="reader-grid" d="M48 80H950M48 150H950M48 220H950M48 290H950M48 350H950M48 440H950"/>
+            <g className="base-layer"><rect x="300" y="162" width="405" height="62"/><text x="318" y="184">{lang === "en" ? "Tightening base" : "Nền giá siết chặt"}</text><path d="M505 170H930"/><text x="512" y="158">{lang === "en" ? "Pivot / resistance" : "Pivot / kháng cự"}</text></g>
+            <g className="ma-layer"><path className="ma-fast" d="M70 275 C220 245 285 205 390 205 S570 205 680 184 S815 143 900 120"/><path className="ma-slow" d="M70 300 C260 285 380 265 520 246 S770 215 900 190"/><text x="905" y="118">MA50</text><text x="905" y="190">MA200</text></g>
+            <g className="risk-layer"><path d="M505 230H930"/><text x="810" y="247">{lang === "en" ? "Invalidation / stop zone" : "Vùng vô hiệu / stop"}</text></g>
+            <g className="chart-price-layer">{chartBars.map(([open,high,low,close],index) => { const x=chartBarX(index); const openY=chartPriceY(open); const closeY=chartPriceY(close); return <g className={close >= open ? "up-candle" : "down-candle"} key={index}><path d={`M${x} ${chartPriceY(high)}V${chartPriceY(low)}`}/><rect x={x-7} y={Math.min(openY,closeY)} width="14" height={Math.max(Math.abs(openY-closeY),3)}/></g> })}</g>
+            <g className="breakout-layer"><circle cx={chartBarX(14)} cy={chartPriceY(126)} r="12"/><path d={`M${chartBarX(14)} ${chartPriceY(126)-15}L${chartBarX(14)+62} ${chartPriceY(126)-48}`}/><text x={chartBarX(14)+67} y={chartPriceY(126)-50}>{lang === "en" ? "Breakout close" : "Đóng cửa breakout"}</text></g>
+            <g className="volume-layer">{chartBars.map((bar,index) => { const height=bar[4]*1.05; return <rect className={bar[3] >= bar[0] ? "up-volume" : "down-volume"} key={index} x={chartBarX(index)-8} y={440-height} width="16" height={height}/> })}<path d="M48 406H950"/><text x="56" y="399">{lang === "en" ? "Average volume" : "Khối lượng trung bình"}</text><text x="50" y="458">{lang === "en" ? "Daily volume" : "Khối lượng ngày"}</text></g>
+          </svg>
+          <div className="chart-key"><span><i className="key-up"/>{lang === "en" ? "Close ≥ open" : "Đóng ≥ mở"}</span><span><i className="key-down"/>{lang === "en" ? "Close < open" : "Đóng < mở"}</span><span><i className="key-pivot"/>{lang === "en" ? "Decision zone" : "Vùng quyết định"}</span></div>
+        </div>
+        <article className="chart-lesson-detail"><span>{String(chartLessonIndex + 1).padStart(2,"0")}</span><div><h3>{chartLessons[lang][chartLessonIndex].title.replace(/^\d+\s·\s/,"")}</h3><p>{chartLessons[lang][chartLessonIndex].inspect}</p><strong>{chartLessons[lang][chartLessonIndex].decision}</strong></div></article>
+      </section>
+
+      <section className="catalog-section"><div className="section-intro"><p className="eyebrow">{lang === "en" ? "No-code starting point" : "Điểm bắt đầu không cần code"}</p><h2>{lang === "en" ? "Useful free web tools" : "Công cụ web miễn phí hữu ích"}</h2><p>{lang === "en" ? "Use a charting site to observe, a screener to narrow the universe, and primary sources to verify." : "Dùng trang biểu đồ để quan sát, bộ lọc để thu hẹp danh sách và nguồn gốc để xác minh."}</p></div><div className="catalog-grid">{researchCatalog[lang].web.map(item => <article key={item.name}><div><span>{item.access}</span><h3>{item.name}</h3></div><p>{item.use}</p><small>{item.caution}</small><a href={item.href} target="_blank" rel="noreferrer">{lang === "en" ? "Official site ↗" : "Trang chính thức ↗"}</a></article>)}</div></section>
+
+      <section className="catalog-section"><div className="section-intro"><p className="eyebrow">{lang === "en" ? "For builders and analysts" : "Cho người xây dựng và phân tích"}</p><h2>{lang === "en" ? "Open-source tools" : "Công cụ mã nguồn mở"}</h2><p>{lang === "en" ? "Software can be open source while the underlying exchange or company data remains licensed." : "Phần mềm có thể là mã nguồn mở trong khi dữ liệu sàn hoặc doanh nghiệp bên dưới vẫn có giấy phép riêng."}</p></div><div className="catalog-grid open-source-grid">{researchCatalog[lang].open.map(item => <article key={item.name}><div><span>{item.license}</span><h3>{item.name}</h3></div><p>{item.use}</p><small>{item.caution}</small><a href={item.href} target="_blank" rel="noreferrer">{lang === "en" ? "Documentation ↗" : "Tài liệu ↗"}</a></article>)}</div></section>
+
+      <section className="api-section"><div className="section-intro"><p className="eyebrow">API</p><h2>{lang === "en" ? "Where to obtain data legally" : "Nơi lấy dữ liệu hợp lệ"}</h2><p>{lang === "en" ? "Limits below were verified from provider pages in July 2026 and can change. Follow the linked terms before building anything public or commercial." : "Các giới hạn dưới đây được kiểm tra từ trang nhà cung cấp vào tháng 7/2026 và có thể thay đổi. Đọc điều khoản liên kết trước khi xây sản phẩm công khai hoặc thương mại."}</p></div><div className="api-grid">{researchCatalog[lang].api.map(item => <article key={item.name}><header><div><span>{item.fit}</span><h3>{item.name}</h3></div><strong>{item.access}</strong></header><p>{item.data}</p><small>{item.limit}</small><a href={item.href} target="_blank" rel="noreferrer">{lang === "en" ? "Get API / read docs ↗" : "Lấy API / đọc tài liệu ↗"}</a></article>)}</div>
+        <div className="api-flow" aria-label={lang === "en" ? "Safe market data application architecture" : "Kiến trúc ứng dụng dữ liệu thị trường an toàn"}>{researchCatalog[lang].steps.map((step,index) => <div className="api-flow-wrap" key={step}><article><span>{String(index + 1).padStart(2,"0")}</span><p>{step}</p></article>{index < researchCatalog[lang].steps.length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>
+        <div className="api-warning"><strong>{lang === "en" ? "Important for this GitHub Pages site" : "Quan trọng với website GitHub Pages này"}</strong><p>{lang === "en" ? "It is a static front end, so private API keys must not be added to its code. Use a small backend, serverless worker, or scheduled GitHub Action that stores the key as a secret and publishes sanitized cached data. Do not reverse-engineer private app endpoints from TradingView, FireAnt, or a broker." : "Đây là front end tĩnh, vì vậy không được thêm API key riêng vào mã nguồn. Hãy dùng backend nhỏ, serverless worker hoặc GitHub Action định kỳ lưu key dưới dạng secret và công bố dữ liệu cache đã làm sạch. Không dịch ngược endpoint riêng của TradingView, FireAnt hoặc công ty môi giới."}</p></div>
+      </section>
+      <div className="cycle-sources research-sources"><span>{lang === "en" ? "Verified sources:" : "Nguồn đã kiểm tra:"}</span><a href="https://www.sec.gov/about/developer-resources" target="_blank" rel="noreferrer">SEC developer resources</a><a href="https://fred.stlouisfed.org/docs/api/fred/" target="_blank" rel="noreferrer">FRED API</a><a href="https://www.alphavantage.co/support/" target="_blank" rel="noreferrer">Alpha Vantage</a><a href="https://twelvedata.com/pricing" target="_blank" rel="noreferrer">Twelve Data</a><a href="https://github.com/OpenBB-finance/OpenBB" target="_blank" rel="noreferrer">OpenBB</a></div>
     </section>}
 
     {page === "tools" && <section className="content-page tools-page"><p className="eyebrow">{lang === "en" ? "Calculators" : "Máy tính"}</p><h1>{t.toolsTitle}</h1><p className="lede narrow">{lang === "en" ? "Use the book’s core formulas to test valuation, business quality, cash flow, and trade risk." : "Dùng các công thức cốt lõi trong sách để kiểm tra định giá, chất lượng doanh nghiệp, dòng tiền và rủi ro giao dịch."}</p><div className="tools-grid">
