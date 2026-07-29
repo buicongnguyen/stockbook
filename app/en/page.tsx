@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import Home from "../page";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://buicongnguyen.github.io/stockbook/"),
   title: "Stockbook — Investment Experience",
   description: "A bilingual field guide for disciplined stock investing, risk management, and decision-making.",
-  icons: { icon: "/favicon.svg" },
   alternates: {
-    canonical: "./en/",
+    canonical: "https://buicongnguyen.github.io/stockbook/en/",
     languages: {
-      en: "./en/",
-      vi: "./vi/",
+      en: "https://buicongnguyen.github.io/stockbook/en/",
+      vi: "https://buicongnguyen.github.io/stockbook/vi/",
     },
   },
   openGraph: {
-    type: "website",
-    siteName: "Stockbook",
     title: "Stockbook — Investment Experience",
     description: "A bilingual field guide for disciplined stock investing, risk management, and decision-making.",
-    url: "./en/",
+    url: "https://buicongnguyen.github.io/stockbook/en/",
     images: [{ url: "https://buicongnguyen.github.io/stockbook/og.png", alt: "Stockbook — Think clearly before you risk capital." }],
   },
   twitter: {
@@ -29,6 +25,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" suppressHydrationWarning><body>{children}</body></html>;
+export default function EnglishHome() {
+  return <Home localizedLang="en" />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
+import { buildContentUrl, buildRouteSearch, calculateMetrics, readRoute } from "./stockbook-logic";
 
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
@@ -9,6 +10,7 @@ type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" |
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
+const navigationPages: Page[] = ["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "research", "tools"];
 
 function normalizeBook(raw: Book): Book {
   return {...raw, chapters: raw.chapters.map(chapter => ({...chapter, blocks: chapter.blocks.flatMap(block => {
@@ -27,8 +29,8 @@ function splitHeadingText(text: string) {
   return [text.slice(0, match.index).trim(), text.slice(match.index).trim()];
 }
 
-function CalcField({ label, value, onChange, step = "any" }: { label: string; value: number; onChange: (value: number) => void; step?: string }) {
-  return <label>{label}<input type="number" step={step} value={value} onChange={event => onChange(+event.target.value)}/></label>;
+function CalcField({ label, value, onChange, step = "any", min, max, invalid = false }: { label: string; value: number; onChange: (value: number) => void; step?: string; min?: number; max?: number; invalid?: boolean }) {
+  return <label>{label}<input type="number" inputMode="decimal" step={step} min={min} max={max} value={value} aria-invalid={invalid || undefined} onChange={event => onChange(Number.isNaN(event.currentTarget.valueAsNumber) ? 0 : event.currentTarget.valueAsNumber)}/></label>;
 }
 
 function blockOutlineLevel(block: Block) {
@@ -341,9 +343,10 @@ const macroScenarios = {
   ],
 };
 
-export default function Home() {
-  const [lang, setLang] = useState<Lang>("en");
+export default function Home({ localizedLang = null }: { localizedLang?: Lang | null }) {
+  const [lang, setLang] = useState<Lang>(localizedLang ?? "en");
   const [theme, setTheme] = useState<Theme>("light");
+  const [initialized, setInitialized] = useState(false);
   const [flowStyle, setFlowStyle] = useState<FlowStyle>("gates");
   const [cyclePhase, setCyclePhase] = useState(0);
   const [macroScenario, setMacroScenario] = useState(0);
@@ -351,6 +354,8 @@ export default function Home() {
   const [chartLessonIndex, setChartLessonIndex] = useState(0);
   const [page, setPage] = useState<Page>("home");
   const [book, setBook] = useState<Book | null>(null);
+  const [bookStatus, setBookStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [bookRequest, setBookRequest] = useState(0);
   const [chapter, setChapter] = useState(0);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [account, setAccount] = useState(100000);
@@ -363,7 +368,8 @@ export default function Home() {
   const [bvps, setBvps] = useState(25);
   const [growth, setGrowth] = useState(12);
   const [netIncome, setNetIncome] = useState(120);
-  const [equity, setEquity] = useState(600);
+  const [averageEquity, setAverageEquity] = useState(600);
+  const [shareholdersEquity, setShareholdersEquity] = useState(600);
   const [assets, setAssets] = useState(1000);
   const [cfo, setCfo] = useState(180);
   const [capex, setCapex] = useState(60);
@@ -372,56 +378,178 @@ export default function Home() {
 
   useEffect(() => {
     const saved = localStorage.getItem("stockbook-language") as Lang | null;
-    if (saved === "vi" || saved === "en") queueMicrotask(() => setLang(saved));
+    const fallbackLang: Lang = localizedLang ?? (saved === "vi" || saved === "en" ? saved : "en");
+    const route = readRoute(window.location.search, fallbackLang);
     const savedTheme = localStorage.getItem("stockbook-theme") as Theme | null;
     const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    queueMicrotask(() => setTheme(savedTheme === "dark" || savedTheme === "light" ? savedTheme : preferredTheme));
-  }, []);
+    queueMicrotask(() => {
+      setLang(route.lang as Lang);
+      setPage(route.page as Page);
+      setChapter(route.chapter);
+      setTheme(savedTheme === "dark" || savedTheme === "light" ? savedTheme : preferredTheme);
+      setInitialized(true);
+    });
+    const canonicalSearch = buildRouteSearch(
+      window.location.search,
+      route.page,
+      localizedLang === route.lang ? "en" : route.lang,
+      route.chapter,
+    );
+    if (canonicalSearch !== window.location.search) history.replaceState(null, "", `${window.location.pathname}${canonicalSearch}${window.location.hash}`);
+
+    const handlePopState = () => {
+      const nextRoute = readRoute(window.location.search, localizedLang ?? "en");
+      setPage(nextRoute.page as Page);
+      setLang(nextRoute.lang as Lang);
+      setChapter(nextRoute.chapter);
+      setOutlineOpen(false);
+      window.scrollTo({ top: 0, behavior: "auto" });
+      focusPageHeading();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [localizedLang]);
   useEffect(() => {
+    if (!initialized) return;
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("stockbook-theme", theme);
-  }, [theme]);
+  }, [initialized, theme]);
   useEffect(() => {
-    const controller = new AbortController();
+    if (!initialized) return;
     localStorage.setItem("stockbook-language", lang);
     document.documentElement.lang = lang;
-    fetch(`./content/investment-experience-${lang}.json`, { signal: controller.signal })
+    const pageIndex = navigationPages.indexOf(page);
+    document.title = page === "home" ? `Stockbook — ${lang === "en" ? "Investment Experience" : "Kinh nghiệm đầu tư"}` : `${t.nav[pageIndex]} — Stockbook`;
+    document.querySelector('meta[name="description"]')?.setAttribute(
+      "content",
+      lang === "en"
+        ? "A bilingual field guide for disciplined stock investing, risk management, and decision-making."
+        : "Cẩm nang song ngữ về đầu tư cổ phiếu có kỷ luật, quản trị rủi ro và ra quyết định.",
+    );
+  }, [initialized, lang, page, t.nav]);
+  useEffect(() => {
+    if (!initialized) return;
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) {
+        setBook(null);
+        setBookStatus("loading");
+      }
+    });
+    fetch(buildContentUrl(window.location.pathname, lang), { signal: controller.signal })
       .then(r => {
         if (!r.ok) throw new Error(`Could not load ${lang} book content`);
         return r.json();
       })
-      .then((raw: Book) => setBook(normalizeBook(raw)))
+      .then((raw: Book) => {
+        const normalized = normalizeBook(raw);
+        setBook(normalized);
+        setChapter(current => Math.min(current, normalized.chapters.length - 1));
+        setBookStatus("ready");
+      })
       .catch(error => {
-        if (error.name !== "AbortError") console.error(error);
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setBookStatus("error");
+        }
       });
     return () => controller.abort();
-  }, [lang]);
+  }, [bookRequest, initialized, lang]);
 
-  const riskBudget = account * riskPct / 100;
-  const riskPerShare = Math.max(entry - stop, 0);
-  const shares = riskPerShare ? Math.floor(riskBudget / riskPerShare) : 0;
-  const rr = riskPerShare ? (target - entry) / riskPerShare : 0;
-  const pe = eps ? stockPrice / eps : 0;
-  const pb = bvps ? stockPrice / bvps : 0;
-  const peg = growth ? pe / growth : 0;
-  const roe = equity ? netIncome / equity * 100 : 0;
-  const roa = assets ? netIncome / assets * 100 : 0;
-  const fcf = cfo - capex;
-  const debtToEquity = equity ? debt / equity : 0;
+  const metrics = calculateMetrics({
+    account,
+    riskPct,
+    entry,
+    stop,
+    target,
+    stockPrice,
+    eps,
+    bvps,
+    growth,
+    netIncome,
+    averageEquity,
+    shareholdersEquity,
+    assets,
+    cfo,
+    capex,
+    debt,
+  });
+  const {
+    positionValid,
+    rewardRiskValid,
+    riskBudget,
+    shares,
+    positionValue,
+    capitalLimited,
+    rewardRisk: rr,
+    pe,
+    pb,
+    peg,
+    roe,
+    roa,
+    fcf,
+    debtToEquity,
+  } = metrics;
   const activeChapter = book?.chapters[chapter];
   const outline = activeChapter?.blocks.map((block, index) => ({ block, index, level: blockOutlineLevel(block) })).filter(item => item.level) ?? [];
+  const formatMetric = (value: number | null, digits = 2, suffix = "") => value === null || !Number.isFinite(value) ? "—" : `${value.toFixed(digits)}${suffix}`;
+  const positionMessage = lang === "en" ? "Use positive account, risk, and entry values; risk must be at most 100%, and stop must be below entry." : "Dùng giá trị tài khoản, rủi ro và giá mua dương; rủi ro tối đa 100% và giá cắt lỗ phải thấp hơn giá mua.";
+  const rewardRiskMessage = lang === "en" ? "Entry must be positive, stop must be below entry, and target must be above entry." : "Giá mua phải dương, giá cắt lỗ thấp hơn giá mua và giá mục tiêu cao hơn giá mua.";
 
-  function navigate(next: Page) { setPage(next); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  function changeLanguage(next: Lang) { setChapter(0); setLang(next); }
+  function updateUrl(nextPage: Page, nextLang: Lang, nextChapter: number, mode: "push" | "replace" = "push") {
+    const searchLang = localizedLang === nextLang ? "en" : nextLang;
+    const search = buildRouteSearch(window.location.search, nextPage, searchLang, nextChapter);
+    const nextUrl = `${window.location.pathname}${search}${window.location.hash}`;
+    if (mode === "replace") history.replaceState(null, "", nextUrl);
+    else history.pushState(null, "", nextUrl);
+  }
+  function focusPageHeading() {
+    requestAnimationFrame(() => {
+      const heading = document.querySelector("main h1") as HTMLElement | null;
+      if (!heading) return;
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    });
+  }
+  function navigate(next: Page) {
+    updateUrl(next, lang, chapter);
+    setPage(next);
+    setOutlineOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    focusPageHeading();
+  }
+  function handlePageLink(event: MouseEvent<HTMLAnchorElement>, next: Page) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(next);
+  }
+  function pageHref(next: Page) {
+    return buildRouteSearch("", next, localizedLang === lang ? "en" : lang, chapter) || "./";
+  }
+  function languageHref(next: Lang) {
+    const prefix = localizedLang ? `../${next}/` : `${next}/`;
+    return `${prefix}${buildRouteSearch("", page, "en", chapter)}`;
+  }
+  function changeChapter(next: number) {
+    const safeChapter = Math.max(0, Math.min(4, next));
+    updateUrl("book", lang, safeChapter);
+    setChapter(safeChapter);
+    setOutlineOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    focusPageHeading();
+  }
 
   return <main>
     <header className="topbar">
-      <button className="brand" onClick={() => navigate("home")}><span className="brand-mark">S</span>{t.brand}</button>
-      <nav>{(["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "research", "tools"] as Page[]).map((item, i) =>
-        <button key={item} className={page === item ? "active" : ""} onClick={() => navigate(item)}>{t.nav[i]}</button>)}</nav>
-      <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" aria-label="Language">
-        <button className={lang === "en" ? "selected" : ""} onClick={() => changeLanguage("en")}>EN</button>
-        <button className={lang === "vi" ? "selected" : ""} onClick={() => changeLanguage("vi")}>VI</button>
+      <a className="brand" href={pageHref("home")} onClick={event => handlePageLink(event, "home")}><span className="brand-mark">S</span>{t.brand}</a>
+      <div className="primary-nav-shell">
+        <nav aria-label={lang === "en" ? "Primary navigation" : "Điều hướng chính"}>{navigationPages.map((item, i) =>
+          <a key={item} href={pageHref(item)} className={page === item ? "active" : ""} aria-current={page === item ? "page" : undefined} onClick={event => handlePageLink(event, item)}>{t.nav[i]}</a>)}</nav>
+        <span className="nav-scroll-cue" aria-hidden="true">↔</span>
+      </div>
+      <div className="header-controls"><button className="theme-toggle" aria-label={theme === "light" ? (lang === "en" ? "Use dark mode" : "Dùng chế độ tối") : (lang === "en" ? "Use light mode" : "Dùng chế độ sáng")} aria-pressed={theme === "dark"} title={theme === "light" ? (lang === "en" ? "Dark mode" : "Chế độ tối") : (lang === "en" ? "Light mode" : "Chế độ sáng")} onClick={() => setTheme(current => current === "light" ? "dark" : "light")}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button><div className="language" role="group" aria-label={lang === "en" ? "Language" : "Ngôn ngữ"}>
+        <a href={languageHref("en")} className={lang === "en" ? "selected" : ""} aria-current={lang === "en" ? "page" : undefined} onClick={() => localStorage.setItem("stockbook-language", "en")}>EN</a>
+        <a href={languageHref("vi")} className={lang === "vi" ? "selected" : ""} aria-current={lang === "vi" ? "page" : undefined} onClick={() => localStorage.setItem("stockbook-language", "vi")}>VI</a>
       </div>
       </div>
     </header>
@@ -429,7 +557,7 @@ export default function Home() {
     {page === "home" && <>
       <section className="hero">
         <div><p className="eyebrow">{t.eyebrow}</p><h1>{t.hero}</h1><p className="lede">{t.sub}</p>
-          <div className="actions"><button className="primary" onClick={() => navigate("book")}>{t.read}</button><button className="secondary" onClick={() => navigate("framework")}>{t.framework} →</button></div>
+          <div className="actions"><a className="primary" href={pageHref("book")} onClick={event => handlePageLink(event, "book")}>{t.read}</a><a className="secondary" href={pageHref("framework")} onClick={event => handlePageLink(event, "framework")}>{t.framework} →</a></div>
         </div>
         <div className="hero-card"><p className="folio">01 — 05</p><h2>{t.bookTitle}</h2><p>{t.bookIntro}</p><div className="rule"/><p className="quote">“{t.quote}”</p></div>
       </section>
@@ -437,19 +565,19 @@ export default function Home() {
     </>}
 
     {page === "book" && <section className="reader-shell">
-      <aside className={`chapter-tree ${outlineOpen ? "open" : ""}`}><button className="tree-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen(value => !value)}><span>{lang === "en" ? "Chapter outline" : "Mục lục chương"}</span><b aria-hidden="true">{outlineOpen ? "−" : "+"}</b></button><div className="tree-body"><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <div className="tree-chapter" key={item.id}><button className={chapter === i ? "current" : ""} aria-expanded={chapter === i} onClick={() => {setChapter(i); window.scrollTo(0,0)}}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>{chapter === i && <div className="tree-children">{outline.map(({block, index, level}) => { const [label] = splitHeadingText(block.text); return <button className={`tree-item level-${level}`} key={index} title={label} onClick={() => {document.getElementById(`book-item-${index}`)?.scrollIntoView({behavior:"smooth", block:"start"}); setOutlineOpen(false)}}><span aria-hidden="true">{level === 1 ? "▾" : "—"}</span>{label.replace(/^[-]\s*/, "")}</button>})}</div>}</div>)}</div></aside>
-      <article className="book-page">{book && <><p className="chapter-label">{t.chapter} {book.chapters[chapter].number} / 5</p><h1>{book.chapters[chapter].title}</h1><div className="book-rule"/>{book.chapters[chapter].blocks.map((block, i) => <BookBlock block={block} index={i} key={i}/>)}<div className="chapter-nav"><button disabled={chapter === 0} onClick={() => setChapter(chapter - 1)}>← {t.previous}</button><a href={`./downloads/${lang === "en" ? "Kinh%20nghiệm_Luan_June%202026_English.pdf" : "Kinh%20nghiệm_Luan_June%202026.pdf"}`}>{t.download}</a><button disabled={chapter === 4} onClick={() => setChapter(chapter + 1)}>{t.next} →</button></div></>}</article>
+      <aside className={`chapter-tree ${outlineOpen ? "open" : ""}`}><button className="tree-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen(value => !value)}><span>{lang === "en" ? "Chapter outline" : "Mục lục chương"}</span><b aria-hidden="true">{outlineOpen ? "−" : "+"}</b></button><div className="tree-body"><p className="eyebrow">{t.bookTitle}</p>{book?.chapters.map((item, i) => <div className="tree-chapter" key={item.id}><button className={chapter === i ? "current" : ""} aria-current={chapter === i ? "page" : undefined} aria-expanded={chapter === i} onClick={() => changeChapter(i)}><span>{String(i + 1).padStart(2,"0")}</span>{item.title.replace(/^(Chapter|Chương)\s+\d+\s*:\s*/i, "")}</button>{chapter === i && <div className="tree-children">{outline.map(({block, index, level}) => { const [label] = splitHeadingText(block.text); return <button className={`tree-item level-${level}`} key={index} title={label} onClick={() => {document.getElementById(`book-item-${index}`)?.scrollIntoView({behavior:"smooth", block:"start"}); setOutlineOpen(false)}}><span aria-hidden="true">{level === 1 ? "▾" : "—"}</span>{label.replace(/^[-]\s*/, "")}</button>})}</div>}</div>)}</div></aside>
+      <article className="book-page">{bookStatus === "loading" && <div className="book-status" role="status"><span className="book-loader" aria-hidden="true"/><h1>{lang === "en" ? "Loading the book…" : "Đang tải sách…"}</h1><p>{lang === "en" ? "Preparing the selected language." : "Đang chuẩn bị nội dung theo ngôn ngữ đã chọn."}</p></div>}{bookStatus === "error" && <div className="book-status error" role="alert"><h1>{lang === "en" ? "The book could not be loaded" : "Không thể tải nội dung sách"}</h1><p>{lang === "en" ? "Check your connection and try again." : "Hãy kiểm tra kết nối và thử lại."}</p><button onClick={() => setBookRequest(current => current + 1)}>{lang === "en" ? "Try again" : "Thử lại"}</button></div>}{bookStatus === "ready" && book && <><p className="chapter-label">{t.chapter} {book.chapters[chapter].number} / {book.chapters.length}</p><h1>{book.chapters[chapter].title}</h1><div className="book-rule"/>{book.chapters[chapter].blocks.map((block, i) => <BookBlock block={block} index={i} key={i}/>)}<div className="chapter-nav"><button disabled={chapter === 0} onClick={() => changeChapter(chapter - 1)}>← {t.previous}</button><a href={`./downloads/${lang === "en" ? "Kinh%20nghiệm_Luan_June%202026_English.pdf" : "Kinh%20nghiệm_Luan_June%202026.pdf"}`}>{t.download}</a><button disabled={chapter === book.chapters.length - 1} onClick={() => changeChapter(chapter + 1)}>{t.next} →</button></div></>}</article>
     </section>}
 
     {page === "framework" && <section className="content-page framework-page"><p className="eyebrow">{lang === "en" ? "Decision system" : "Hệ thống quyết định"}</p><h1>{t.flowTitle}</h1><p className="lede narrow">{t.flowIntro}</p><div className="flow-style-switch" aria-label={lang === "en" ? "Flow diagram style" : "Kiểu sơ đồ quy trình"}>{(["gates","pipeline","cycle"] as FlowStyle[]).map((style, index) => <button key={style} className={flowStyle === style ? "selected" : ""} aria-pressed={flowStyle === style} onClick={() => setFlowStyle(style)}>{lang === "en" ? ["Decision gates","Quick pipeline","Learning cycle"][index] : ["Cổng quyết định","Quy trình nhanh","Chu trình học hỏi"][index]}</button>)}</div>
-      {flowStyle === "gates" && <><div className="graph-legend"><span><i className="yes-dot"/> {lang === "en" ? "Pass: continue" : "Đạt: tiếp tục"}</span><span><i className="no-dot"/> {lang === "en" ? "Fail: protect capital" : "Không đạt: bảo vệ vốn"}</span></div><div className="decision-graph" role="img" aria-label={lang === "en" ? "Stock-buying thought process from market analysis through review" : "Quy trình suy nghĩ khi mua cổ phiếu từ phân tích thị trường đến đánh giá"}>{flow[lang].map((step, i) => <div className="decision-row" key={step[0]}><div className="decision-spine"><span className="step-number">{step[0]}</span>{i < flow[lang].length - 1 && <span className="yes-path"><b>{lang === "en" ? "YES" : "CÓ"}</b>↓</span>}</div><article className="decision-node"><small>{lang === "en" ? `Gate ${step[0]}` : `Cổng ${step[0]}`}</small><h3>{step[1]}</h3><p>{step[2]}</p></article><div className="no-path"><span>{lang === "en" ? "NO" : "KHÔNG"} →</span><strong>{step[3].replace(/^(No|Không)\s*→\s*/i, "")}</strong></div></div>)}<div className="feedback-loop"><span>↺</span><p><strong>{lang === "en" ? "Learn and repeat" : "Học hỏi và lặp lại"}</strong><br/>{lang === "en" ? "The journal updates your filters, rules, and next decision." : "Nhật ký cập nhật bộ lọc, quy tắc và quyết định tiếp theo."}</p></div></div></>}
-      {flowStyle === "pipeline" && <div className="pipeline-graph" role="img" aria-label={lang === "en" ? "Compact seven-step stock decision pipeline" : "Quy trình quyết định cổ phiếu bảy bước thu gọn"}>{flow[lang].map((step, i) => <div className="pipeline-wrap" key={step[0]}><article><span>{step[0]}</span><h3>{step[1]}</h3><p>{step[2]}</p><small>{step[3]}</small></article>{i < flow[lang].length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>}
-      {flowStyle === "cycle" && <div className="cycle-graph" role="img" aria-label={lang === "en" ? "Observe, plan, act, and learn investment cycle" : "Chu trình đầu tư quan sát, lập kế hoạch, hành động và học hỏi"}><article className="cycle-observe"><span>01</span><h3>{lang === "en" ? "Observe" : "Quan sát"}</h3><p>{flow[lang][0][1]} · {flow[lang][1][1]}</p></article><i>→</i><article className="cycle-plan"><span>02</span><h3>{lang === "en" ? "Plan" : "Lập kế hoạch"}</h3><p>{flow[lang][2][1]} · {flow[lang][3][1]} · {flow[lang][4][1]}</p></article><i>↓</i><article className="cycle-learn"><span>04</span><h3>{lang === "en" ? "Learn" : "Học hỏi"}</h3><p>{flow[lang][6][2]}</p></article><i>←</i><article className="cycle-act"><span>03</span><h3>{lang === "en" ? "Act" : "Hành động"}</h3><p>{flow[lang][5][2]}</p></article><i>↑</i><div className="cycle-core"><strong>{lang === "en" ? "Protect capital" : "Bảo vệ vốn"}</strong><small>{lang === "en" ? "Discipline over prediction" : "Kỷ luật hơn dự đoán"}</small></div></div>}
+      {flowStyle === "gates" && <><div className="graph-legend"><span><i className="yes-dot"/> {lang === "en" ? "Pass: continue" : "Đạt: tiếp tục"}</span><span><i className="no-dot"/> {lang === "en" ? "Fail: protect capital" : "Không đạt: bảo vệ vốn"}</span></div><div className="decision-graph" role="group" aria-label={lang === "en" ? "Stock-buying thought process from market analysis through review" : "Quy trình suy nghĩ khi mua cổ phiếu từ phân tích thị trường đến đánh giá"}>{flow[lang].map((step, i) => <div className="decision-row" key={step[0]}><div className="decision-spine"><span className="step-number">{step[0]}</span>{i < flow[lang].length - 1 && <span className="yes-path"><b>{lang === "en" ? "YES" : "CÓ"}</b>↓</span>}</div><article className="decision-node"><small>{lang === "en" ? `Gate ${step[0]}` : `Cổng ${step[0]}`}</small><h3>{step[1]}</h3><p>{step[2]}</p></article><div className="no-path"><span>{lang === "en" ? "NO" : "KHÔNG"} →</span><strong>{step[3].replace(/^(No|Không)\s*→\s*/i, "")}</strong></div></div>)}<div className="feedback-loop"><span>↺</span><p><strong>{lang === "en" ? "Learn and repeat" : "Học hỏi và lặp lại"}</strong><br/>{lang === "en" ? "The journal updates your filters, rules, and next decision." : "Nhật ký cập nhật bộ lọc, quy tắc và quyết định tiếp theo."}</p></div></div></>}
+      {flowStyle === "pipeline" && <div className="pipeline-graph" role="group" aria-label={lang === "en" ? "Compact seven-step stock decision pipeline" : "Quy trình quyết định cổ phiếu bảy bước thu gọn"}>{flow[lang].map((step, i) => <div className="pipeline-wrap" key={step[0]}><article><span>{step[0]}</span><h3>{step[1]}</h3><p>{step[2]}</p><small>{step[3]}</small></article>{i < flow[lang].length - 1 && <b aria-hidden="true">→</b>}</div>)}</div>}
+      {flowStyle === "cycle" && <div className="cycle-graph" role="group" aria-label={lang === "en" ? "Observe, plan, act, and learn investment cycle" : "Chu trình đầu tư quan sát, lập kế hoạch, hành động và học hỏi"}><article className="cycle-observe"><span>01</span><h3>{lang === "en" ? "Observe" : "Quan sát"}</h3><p>{flow[lang][0][1]} · {flow[lang][1][1]}</p></article><i>→</i><article className="cycle-plan"><span>02</span><h3>{lang === "en" ? "Plan" : "Lập kế hoạch"}</h3><p>{flow[lang][2][1]} · {flow[lang][3][1]} · {flow[lang][4][1]}</p></article><i>↓</i><article className="cycle-learn"><span>04</span><h3>{lang === "en" ? "Learn" : "Học hỏi"}</h3><p>{flow[lang][6][2]}</p></article><i>←</i><article className="cycle-act"><span>03</span><h3>{lang === "en" ? "Act" : "Hành động"}</h3><p>{flow[lang][5][2]}</p></article><i>↑</i><div className="cycle-core"><strong>{lang === "en" ? "Protect capital" : "Bảo vệ vốn"}</strong><small>{lang === "en" ? "Discipline over prediction" : "Kỷ luật hơn dự đoán"}</small></div></div>}
     </section>}
 
     {page === "cycles" && <section className="content-page cycles-page"><p className="eyebrow">{lang === "en" ? "Market seasons" : "Các mùa của thị trường"}</p><h1>{lang === "en" ? "How the stock-market cycle changes the decision" : "Chu kỳ thị trường thay đổi quyết định như thế nào"}</h1><p className="lede narrow">{lang === "en" ? "The economy does not move in a straight line. Use this map to connect growth, credit, profits, sector leadership, and risk posture." : "Nền kinh tế không vận động theo đường thẳng. Sơ đồ này kết nối tăng trưởng, tín dụng, lợi nhuận, nhóm ngành dẫn dắt và cách quản trị rủi ro."}</p>
-      <div className="market-cycle-chart" role="img" aria-label={lang === "en" ? "Four-phase business and stock market cycle" : "Chu kỳ kinh tế và chứng khoán gồm bốn giai đoạn"}>
-        <svg viewBox="0 0 1000 310" aria-hidden="true"><path className="cycle-axis" d="M40 250H960"/><path className="cycle-wave" d="M40 235 C150 235 170 75 285 75 S410 155 510 155 S620 55 735 90 S850 260 960 235"/>{marketCycles[lang].map((phase,index) => { const points=[[120,190],[360,110],[690,78],[890,220]][index]; return <g key={phase.phase} className={cyclePhase === index ? "active" : ""}><circle cx={points[0]} cy={points[1]} r="13"/><text x={points[0]} y={points[1]-28} textAnchor="middle">{phase.season}</text><text x={points[0]} y={points[1]+38} textAnchor="middle">{phase.phase}</text></g>})}</svg>
+      <div className="market-cycle-chart" role="group" aria-label={lang === "en" ? "Four-phase business and stock market cycle" : "Chu kỳ kinh tế và chứng khoán gồm bốn giai đoạn"}>
+        <div className="diagram-scroll" tabIndex={0} aria-label={lang === "en" ? "Scrollable market-cycle chart" : "Biểu đồ chu kỳ thị trường có thể cuộn ngang"}><svg viewBox="0 0 1000 310" aria-hidden="true"><path className="cycle-axis" d="M40 250H960"/><path className="cycle-wave" d="M40 235 C150 235 170 75 285 75 S410 155 510 155 S620 55 735 90 S850 260 960 235"/>{marketCycles[lang].map((phase,index) => { const points=[[120,190],[360,110],[690,78],[890,220]][index]; return <g key={phase.phase} className={cyclePhase === index ? "active" : ""}><circle cx={points[0]} cy={points[1]} r="13"/><text x={points[0]} y={points[1]-28} textAnchor="middle">{phase.season}</text><text x={points[0]} y={points[1]+38} textAnchor="middle">{phase.phase}</text></g>})}</svg></div><p className="mobile-scroll-hint">{lang === "en" ? "Swipe or scroll to see the full chart →" : "Vuốt hoặc cuộn để xem toàn bộ biểu đồ →"}</p>
         <div className="cycle-phase-tabs">{marketCycles[lang].map((phase,index) => <button key={phase.phase} className={`${phase.color} ${cyclePhase === index ? "selected" : ""}`} aria-pressed={cyclePhase === index} onClick={() => setCyclePhase(index)}><span>{phase.season}</span><strong>{phase.phase}</strong></button>)}</div>
       </div>
       <article className={`cycle-detail ${marketCycles[lang][cyclePhase].color}`}><header><span>{String(cyclePhase + 1).padStart(2,"0")}</span><div><small>{marketCycles[lang][cyclePhase].season}</small><h2>{marketCycles[lang][cyclePhase].phase}</h2></div></header><div className="cycle-detail-grid"><section><h3>{lang === "en" ? "Economic pattern" : "Đặc điểm kinh tế"}</h3><p>{marketCycles[lang][cyclePhase].economy}</p></section><section><h3>{lang === "en" ? "Historical sector tendency" : "Xu hướng ngành trong lịch sử"}</h3><p>{marketCycles[lang][cyclePhase].sectors}</p></section><section><h3>{lang === "en" ? "Decision posture" : "Cách ra quyết định"}</h3><p>{marketCycles[lang][cyclePhase].action}</p></section></div></article>
@@ -458,7 +586,7 @@ export default function Home() {
     </section>}
 
     {page === "macro" && <section className="content-page macro-page"><p className="eyebrow">{lang === "en" ? "Macro transmission" : "Cơ chế truyền dẫn vĩ mô"}</p><h1>{lang === "en" ? "Fed rates, inflation, jobs, stocks, and gold" : "Lãi suất Fed, lạm phát, việc làm, cổ phiếu và vàng"}</h1><p className="lede narrow">{lang === "en" ? "The Fed reacts to inflation and employment, while markets react to both the decision and what it reveals about the economy. The relationships are conditional, not mechanical." : "Fed phản ứng với lạm phát và việc làm, còn thị trường phản ứng với cả quyết định lẫn thông tin quyết định đó tiết lộ về nền kinh tế. Các quan hệ có điều kiện, không máy móc."}</p>
-      <div className="macro-flow" role="img" aria-label={lang === "en" ? "Inflation and employment feed into Fed policy, financial conditions, stocks and gold" : "Lạm phát và việc làm tác động đến chính sách Fed, điều kiện tài chính, cổ phiếu và vàng"}><div className="macro-inputs"><article><span>CPI / PCE</span><h3>{lang === "en" ? "Inflation" : "Lạm phát"}</h3><p>{lang === "en" ? "Price pressure and expectations" : "Áp lực giá và kỳ vọng"}</p></article><article><span>NFP / U-3</span><h3>{lang === "en" ? "Employment" : "Việc làm"}</h3><p>{lang === "en" ? "Jobs, unemployment, wages" : "Việc làm, thất nghiệp, tiền lương"}</p></article></div><div className="macro-arrow">↓</div><article className="fed-node"><span>FOMC</span><h2>{lang === "en" ? "Federal Reserve decision" : "Quyết định của Fed"}</h2><p>{lang === "en" ? "Maximum employment + price stability" : "Việc làm tối đa + ổn định giá"}</p></article><div className="macro-arrow">↓</div><article className="conditions-node"><h3>{lang === "en" ? "Rates and financial conditions" : "Lãi suất và điều kiện tài chính"}</h3><p>{lang === "en" ? "Borrowing costs · Discount rates · Dollar · Credit · Liquidity · Real yields" : "Chi phí vay · Lãi suất chiết khấu · USD · Tín dụng · Thanh khoản · Lợi suất thực"}</p></article><div className="macro-arrow split">↙ ↓ ↘</div><div className="macro-outcomes"><article><h3>{lang === "en" ? "Stocks" : "Cổ phiếu"}</h3><p>{lang === "en" ? "Valuation, earnings, risk premium" : "Định giá, lợi nhuận, phần bù rủi ro"}</p></article><article><h3>{lang === "en" ? "Economy and jobs" : "Kinh tế và việc làm"}</h3><p>{lang === "en" ? "Demand, investment, hiring" : "Nhu cầu, đầu tư, tuyển dụng"}</p></article><article><h3>{lang === "en" ? "Gold" : "Vàng"}</h3><p>{lang === "en" ? "Real yields, dollar, inflation, risk" : "Lợi suất thực, USD, lạm phát, rủi ro"}</p></article></div></div>
+      <div className="macro-flow" role="group" aria-label={lang === "en" ? "Inflation and employment feed into Fed policy, financial conditions, stocks and gold" : "Lạm phát và việc làm tác động đến chính sách Fed, điều kiện tài chính, cổ phiếu và vàng"}><div className="macro-inputs"><article><span>CPI / PCE</span><h3>{lang === "en" ? "Inflation" : "Lạm phát"}</h3><p>{lang === "en" ? "Price pressure and expectations" : "Áp lực giá và kỳ vọng"}</p></article><article><span>NFP / U-3</span><h3>{lang === "en" ? "Employment" : "Việc làm"}</h3><p>{lang === "en" ? "Jobs, unemployment, wages" : "Việc làm, thất nghiệp, tiền lương"}</p></article></div><div className="macro-arrow">↓</div><article className="fed-node"><span>FOMC</span><h2>{lang === "en" ? "Federal Reserve decision" : "Quyết định của Fed"}</h2><p>{lang === "en" ? "Maximum employment + price stability" : "Việc làm tối đa + ổn định giá"}</p></article><div className="macro-arrow">↓</div><article className="conditions-node"><h3>{lang === "en" ? "Rates and financial conditions" : "Lãi suất và điều kiện tài chính"}</h3><p>{lang === "en" ? "Borrowing costs · Discount rates · Dollar · Credit · Liquidity · Real yields" : "Chi phí vay · Lãi suất chiết khấu · USD · Tín dụng · Thanh khoản · Lợi suất thực"}</p></article><div className="macro-arrow split">↙ ↓ ↘</div><div className="macro-outcomes"><article><h3>{lang === "en" ? "Stocks" : "Cổ phiếu"}</h3><p>{lang === "en" ? "Valuation, earnings, risk premium" : "Định giá, lợi nhuận, phần bù rủi ro"}</p></article><article><h3>{lang === "en" ? "Economy and jobs" : "Kinh tế và việc làm"}</h3><p>{lang === "en" ? "Demand, investment, hiring" : "Nhu cầu, đầu tư, tuyển dụng"}</p></article><article><h3>{lang === "en" ? "Gold" : "Vàng"}</h3><p>{lang === "en" ? "Real yields, dollar, inflation, risk" : "Lợi suất thực, USD, lạm phát, rủi ro"}</p></article></div></div>
       <div className="macro-scenarios"><p className="eyebrow">{lang === "en" ? "Choose a scenario" : "Chọn kịch bản"}</p><div className="macro-tabs">{macroScenarios[lang].map((scenario,index) => <button key={scenario.name} className={macroScenario === index ? "selected" : ""} aria-pressed={macroScenario === index} onClick={() => setMacroScenario(index)}>{scenario.name}</button>)}</div><article className={`macro-scenario ${macroScenarios[lang][macroScenario].tone}`}><header><span>{macroScenarios[lang][macroScenario].inputs}</span><h2>{macroScenarios[lang][macroScenario].name}</h2></header><div><section><h3>FED</h3><p>{macroScenarios[lang][macroScenario].fed}</p></section><section><h3>{lang === "en" ? "STOCKS" : "CỔ PHIẾU"}</h3><p>{macroScenarios[lang][macroScenario].stocks}</p></section><section><h3>{lang === "en" ? "GOLD" : "VÀNG"}</h3><p>{macroScenarios[lang][macroScenario].gold}</p></section></div></article></div>
       <div className="macro-definitions"><article><h3>CPI</h3><p>{lang === "en" ? "BLS measure of average price change for a representative consumer basket." : "Thước đo BLS về mức thay đổi giá trung bình của một rổ hàng hóa và dịch vụ tiêu dùng đại diện."}</p></article><article><h3>PCE</h3><p>{lang === "en" ? "The inflation index used for the Fed’s 2% longer-run goal." : "Chỉ số lạm phát được Fed sử dụng cho mục tiêu dài hạn 2%."}</p></article><article><h3>{lang === "en" ? "Unemployment rate" : "Tỷ lệ thất nghiệp"}</h3><p>{lang === "en" ? "Unemployed people as a percentage of the labor force—not the entire population." : "Số người thất nghiệp tính theo phần trăm lực lượng lao động, không phải toàn bộ dân số."}</p></article><article><h3>{lang === "en" ? "Real yield" : "Lợi suất thực"}</h3><p>{lang === "en" ? "A yield after accounting for inflation expectations; an important opportunity-cost input for gold." : "Lợi suất sau khi tính đến kỳ vọng lạm phát; một yếu tố chi phí cơ hội quan trọng đối với vàng."}</p></article></div>
       <p className="macro-warning">{lang === "en" ? "A rate cut is not automatically bullish and a rate hike is not automatically bearish. Markets price expectations in advance, and the reason for the policy change can matter more than the change itself." : "Giảm lãi suất không tự động đồng nghĩa tăng giá và tăng lãi suất không tự động đồng nghĩa giảm giá. Thị trường phản ánh kỳ vọng trước, và nguyên nhân thay đổi chính sách có thể quan trọng hơn bản thân thay đổi."}</p>
@@ -466,15 +594,15 @@ export default function Home() {
     </section>}
 
     {page === "terminology" && <section className="content-page terminology-page"><p className="eyebrow">{lang === "en" ? "Market language" : "Ngôn ngữ thị trường"}</p><h1>{lang === "en" ? "Stock terminology, shown on the chart" : "Thuật ngữ chứng khoán trên biểu đồ"}</h1><p className="lede narrow">{lang === "en" ? "Learn what traders mean when they say a move is priced in, a stock reached ATH, the market turned bearish, or an option is a call or put." : "Hiểu ý nghĩa khi nhà giao dịch nói thông tin đã phản ánh vào giá, cổ phiếu đạt ATH, thị trường chuyển sang gấu hoặc quyền chọn là call hay put."}</p>
-      <div className="term-chart" role="img" aria-label={lang === "en" ? "Annotated stock price chart demonstrating common market terminology" : "Biểu đồ giá cổ phiếu minh họa các thuật ngữ thị trường phổ biến"}><svg viewBox="0 0 1000 390" aria-hidden="true"><path className="term-grid" d="M55 80H960M55 180H960M55 280H960"/><path className="price-path" d="M55 300 C120 285 150 250 205 258 S280 205 340 215 S410 125 485 112 S555 130 615 75 S670 95 705 90 S760 180 805 205 S870 260 945 285"/><path className="support-line" d="M55 300H945"/><path className="resistance-line" d="M205 215H575"/><circle cx="615" cy="75" r="9"/><text x="615" y="48" textAnchor="middle">ATH</text><text x="160" y="335">{lang === "en" ? "Bull trend" : "Xu hướng bò"}</text><text x="820" y="330">{lang === "en" ? "Bear trend" : "Xu hướng gấu"}</text><text x="385" y="200">{lang === "en" ? "Resistance" : "Kháng cự"}</text><text x="65" y="292">{lang === "en" ? "Support" : "Hỗ trợ"}</text><path className="breakout-mark" d="M470 165L505 120"/><text x="430" y="158">{lang === "en" ? "Breakout" : "Phá vỡ"}</text><path className="event-line" d="M705 90V245"/><text x="715" y="240">{lang === "en" ? "Good news arrives" : "Tin tốt xuất hiện"}</text><text x="715" y="260">{lang === "en" ? "but was priced in" : "nhưng đã phản ánh vào giá"}</text></svg></div>
-      <div className="options-explainer"><div><p className="eyebrow">{lang === "en" ? "Options at expiration" : "Quyền chọn khi đáo hạn"}</p><h2>{lang === "en" ? "Long call and long put payoff" : "Lợi nhuận của mua call và mua put"}</h2><p>{lang === "en" ? "Example strike = 100 and premium = 5. The buyer’s maximum loss is the premium in these simplified diagrams." : "Ví dụ giá thực hiện = 100 và phí = 5. Trong sơ đồ đơn giản này, khoản lỗ tối đa của người mua là phí quyền chọn."}</p></div><svg viewBox="0 0 800 330" role="img" aria-label={lang === "en" ? "Long call and long put profit at expiration" : "Lợi nhuận mua call và mua put khi đáo hạn"}><path className="payoff-axis" d="M55 165H755M400 35V290"/><path className="call-payoff" d="M70 200H400L730 55"/><path className="put-payoff" d="M70 55L400 200H730"/><path className="zero-line" d="M55 165H755"/><text x="710" y="45">CALL</text><text x="75" y="45">PUT</text><text x="410" y="318">{lang === "en" ? "Strike 100" : "Giá thực hiện 100"}</text><text x="650" y="155">{lang === "en" ? "Profit" : "Lãi"}</text><text x="650" y="220">{lang === "en" ? "Premium loss" : "Lỗ phí"}</text></svg></div>
+      <div className="term-chart" role="group" aria-label={lang === "en" ? "Annotated stock price chart demonstrating common market terminology" : "Biểu đồ giá cổ phiếu minh họa các thuật ngữ thị trường phổ biến"}><div className="diagram-scroll" tabIndex={0} aria-label={lang === "en" ? "Scrollable terminology chart" : "Biểu đồ thuật ngữ có thể cuộn ngang"}><svg viewBox="0 0 1000 390" aria-hidden="true"><path className="term-grid" d="M55 80H960M55 180H960M55 280H960"/><path className="price-path" d="M55 300 C120 285 150 250 205 258 S280 205 340 215 S410 125 485 112 S555 130 615 75 S670 95 705 90 S760 180 805 205 S870 260 945 285"/><path className="support-line" d="M55 300H945"/><path className="resistance-line" d="M205 215H575"/><circle cx="615" cy="75" r="9"/><text x="615" y="48" textAnchor="middle">ATH</text><text x="160" y="335">{lang === "en" ? "Bull trend" : "Xu hướng bò"}</text><text x="820" y="330">{lang === "en" ? "Bear trend" : "Xu hướng gấu"}</text><text x="385" y="200">{lang === "en" ? "Resistance" : "Kháng cự"}</text><text x="65" y="292">{lang === "en" ? "Support" : "Hỗ trợ"}</text><path className="breakout-mark" d="M470 165L505 120"/><text x="430" y="158">{lang === "en" ? "Breakout" : "Phá vỡ"}</text><path className="event-line" d="M705 90V245"/><text x="715" y="240">{lang === "en" ? "Good news arrives" : "Tin tốt xuất hiện"}</text><text x="715" y="260">{lang === "en" ? "but was priced in" : "nhưng đã phản ánh vào giá"}</text></svg></div><p className="mobile-scroll-hint">{lang === "en" ? "Swipe or scroll to read every label →" : "Vuốt hoặc cuộn để đọc mọi nhãn →"}</p></div>
+      <div className="options-explainer"><div><p className="eyebrow">{lang === "en" ? "Options at expiration" : "Quyền chọn khi đáo hạn"}</p><h2>{lang === "en" ? "Long call and long put payoff" : "Lợi nhuận của mua call và mua put"}</h2><p>{lang === "en" ? "Example strike = 100 and premium = 5. The buyer’s maximum loss is the premium in these simplified diagrams." : "Ví dụ giá thực hiện = 100 và phí = 5. Trong sơ đồ đơn giản này, khoản lỗ tối đa của người mua là phí quyền chọn."}</p></div><div className="diagram-shell"><div className="diagram-scroll" tabIndex={0} aria-label={lang === "en" ? "Scrollable options payoff chart" : "Biểu đồ lợi nhuận quyền chọn có thể cuộn ngang"}><svg viewBox="0 0 800 330" role="img" aria-label={lang === "en" ? "Long call and long put profit at expiration" : "Lợi nhuận mua call và mua put khi đáo hạn"}><path className="payoff-axis" d="M55 165H755M400 35V290"/><path className="call-payoff" d="M70 200H400L730 55"/><path className="put-payoff" d="M70 55L400 200H730"/><path className="zero-line" d="M55 165H755"/><text x="710" y="45">CALL</text><text x="75" y="45">PUT</text><text x="410" y="318">{lang === "en" ? "Strike 100" : "Giá thực hiện 100"}</text><text x="650" y="155">{lang === "en" ? "Profit" : "Lãi"}</text><text x="650" y="220">{lang === "en" ? "Premium loss" : "Lỗ phí"}</text></svg></div><p className="mobile-scroll-hint">{lang === "en" ? "Swipe or scroll to see the full payoff →" : "Vuốt hoặc cuộn để xem toàn bộ lợi nhuận →"}</p></div></div>
       <div className="term-groups">{(["market","trading","options"] as const).map(group => <section key={group}><h2>{lang === "en" ? {market:"Market and price",trading:"Trading and orders",options:"Options"}[group] : {market:"Thị trường và giá",trading:"Giao dịch và lệnh",options:"Quyền chọn"}[group]}</h2><div className="term-grid-cards">{terminology[lang][group].map(term => <article key={term[0]}><h3>{term[0]}</h3><p>{term[1]}</p></article>)}</div></section>)}</div>
       <p className="term-warning">{lang === "en" ? "Options and short selling can involve substantial risk. These diagrams explain terminology and are not trading recommendations." : "Quyền chọn và bán khống có thể có rủi ro lớn. Các sơ đồ chỉ giải thích thuật ngữ, không phải khuyến nghị giao dịch."}</p>
       <div className="cycle-sources"><span>{lang === "en" ? "Definitions:" : "Nguồn định nghĩa:"}</span><a href="https://www.investor.gov/introduction-investing/investing-basics/glossary" target="_blank" rel="noreferrer">Investor.gov glossary</a><a href="https://www.finra.org/investors/investing/investment-products/stocks/order-types" target="_blank" rel="noreferrer">FINRA order types</a><a href="https://www.optionseducation.org/optionsoverview/options-basics" target="_blank" rel="noreferrer">Options Industry Council</a></div>
     </section>}
 
     {page === "strategies" && <section className="content-page strategy-page"><p className="eyebrow">{lang === "en" ? "Strategy library" : "Thư viện chiến lược"}</p><h1>{t.strategiesTitle}</h1><p className="lede narrow">{lang === "en" ? "A strategy is not only an entry technique. Compare the holding period, workload, potential advantage, failure mode, and safeguards before risking capital." : "Chiến lược không chỉ là kỹ thuật vào lệnh. Hãy so sánh thời gian nắm giữ, công sức, lợi thế tiềm năng, cách thất bại và hàng rào bảo vệ trước khi mạo hiểm vốn."}</p>
-      <div className="strategy-map" role="img" aria-label={lang === "en" ? "Investment strategies compared by workload and risk complexity" : "So sánh chiến lược đầu tư theo công sức và độ phức tạp rủi ro"}><div className="map-y">{lang === "en" ? "Higher risk / complexity" : "Rủi ro / phức tạp cao hơn"} ↑</div><div className="map-plot">{strategyProfiles[lang].map((profile,index) => <button key={profile.name} className={strategyIndex === index ? "selected" : ""} style={{left:`${profile.x}%`,bottom:`${profile.y}%`}} onClick={() => setStrategyIndex(index)} aria-label={`${profile.name}: ${profile.horizon}`}><span>{index + 1}</span>{profile.name}</button>)}</div><div className="map-x">→ {lang === "en" ? "More time and monitoring" : "Nhiều thời gian và theo dõi hơn"}</div></div>
+      <div className="strategy-map" role="group" aria-label={lang === "en" ? "Investment strategies compared by workload and risk complexity" : "So sánh chiến lược đầu tư theo công sức và độ phức tạp rủi ro"}><div className="map-y">{lang === "en" ? "Higher risk / complexity" : "Rủi ro / phức tạp cao hơn"} ↑</div><div className="diagram-scroll" tabIndex={0} aria-label={lang === "en" ? "Scrollable strategy comparison" : "So sánh chiến lược có thể cuộn ngang"}><div className="map-plot">{strategyProfiles[lang].map((profile,index) => <button key={profile.name} className={strategyIndex === index ? "selected" : ""} style={{left:`${profile.x}%`,bottom:`${profile.y}%`}} onClick={() => setStrategyIndex(index)} aria-pressed={strategyIndex === index} aria-label={`${profile.name}: ${profile.horizon}`}><span>{index + 1}</span>{profile.name}</button>)}</div></div><p className="mobile-scroll-hint">{lang === "en" ? "Swipe or scroll to compare every strategy →" : "Vuốt hoặc cuộn để so sánh mọi chiến lược →"}</p><div className="map-x">→ {lang === "en" ? "More time and monitoring" : "Nhiều thời gian và theo dõi hơn"}</div></div>
       <div className="strategy-tabs">{strategyProfiles[lang].map((profile,index) => <button key={profile.name} className={strategyIndex === index ? "selected" : ""} aria-pressed={strategyIndex === index} onClick={() => setStrategyIndex(index)}>{profile.name}</button>)}</div>
       <article className={`strategy-detail ${strategyIndex === 3 ? "day-trade-detail" : ""}`}><header><span>{String(strategyIndex + 1).padStart(2,"0")}</span><div><small>{strategyProfiles[lang][strategyIndex].horizon} · {strategyProfiles[lang][strategyIndex].workload}</small><h2>{strategyProfiles[lang][strategyIndex].name}</h2></div></header><div className="strategy-detail-grid"><section><h3>{lang === "en" ? "Potential benefit" : "Lợi ích tiềm năng"}</h3><p>{strategyProfiles[lang][strategyIndex].benefit}</p></section><section><h3>{lang === "en" ? "Main risks" : "Rủi ro chính"}</h3><p>{strategyProfiles[lang][strategyIndex].risk}</p></section><section><h3>{lang === "en" ? "Who it may fit" : "Có thể phù hợp với ai"}</h3><p>{strategyProfiles[lang][strategyIndex].fit}</p></section><section><h3>{lang === "en" ? "Minimum safeguards" : "Hàng rào tối thiểu"}</h3><p>{strategyProfiles[lang][strategyIndex].rules}</p></section></div></article>
       {strategyIndex === 3 && <div className="day-trade-warning"><strong>{lang === "en" ? "Day trading is not a shortcut." : "Day trading không phải đường tắt."}</strong><p>{lang === "en" ? "FINRA says it can be extremely risky and generally is not appropriate for people with limited resources, limited experience, or low risk tolerance. Leverage and short selling can produce losses beyond the original amount invested." : "FINRA cho biết day trading có thể cực kỳ rủi ro và nhìn chung không phù hợp với người có nguồn lực hạn chế, ít kinh nghiệm hoặc khả năng chịu rủi ro thấp. Đòn bẩy và bán khống có thể gây lỗ vượt số vốn ban đầu."}</p></div>}
@@ -486,7 +614,7 @@ export default function Home() {
 
       <section className="research-flow-section"><div className="section-intro"><p className="eyebrow">{lang === "en" ? "Evidence-to-action map" : "Bản đồ từ bằng chứng đến hành động"}</p><h2>{lang === "en" ? "Research-to-decision flow" : "Quy trình từ nghiên cứu đến quyết định"}</h2><p>{lang === "en" ? "Every YES advances the idea. Every NO has a capital-protecting action, so weak evidence never becomes an accidental trade." : "Mỗi câu trả lời CÓ đưa ý tưởng đi tiếp. Mỗi câu KHÔNG đều có hành động bảo vệ vốn, để bằng chứng yếu không vô tình trở thành giao dịch."}</p></div>
         <div className="research-flow-legend"><span><i className="flow-pass-dot"/>{lang === "en" ? "PASS · continue" : "ĐẠT · tiếp tục"}</span><span><i className="flow-stop-dot"/>{lang === "en" ? "FAIL · protect capital" : "KHÔNG ĐẠT · bảo vệ vốn"}</span></div>
-        <div className="research-decision-graph" role="img" aria-label={lang === "en" ? "Eight-step stock research decision flow from question definition through risk review" : "Quy trình quyết định nghiên cứu cổ phiếu tám bước từ xác định câu hỏi đến đánh giá rủi ro"}>{researchDecisionFlow[lang].map((step,index) => <div className="research-decision-row" key={step.title}><div className="research-flow-spine"><span>{String(index + 1).padStart(2,"0")}</span>{index < researchDecisionFlow[lang].length - 1 && <i><b>{lang === "en" ? "YES" : "CÓ"}</b>↓</i>}</div><article><small>{step.phase}</small><h3>{step.title}</h3><p>{step.question}</p><strong>{step.evidence}</strong></article><aside><span>{lang === "en" ? "NO" : "KHÔNG"} →</span><p>{step.fail}</p></aside></div>)}
+        <div className="research-decision-graph" role="group" aria-label={lang === "en" ? "Eight-step stock research decision flow from question definition through risk review" : "Quy trình quyết định nghiên cứu cổ phiếu tám bước từ xác định câu hỏi đến đánh giá rủi ro"}>{researchDecisionFlow[lang].map((step,index) => <div className="research-decision-row" key={step.title}><div className="research-flow-spine"><span>{String(index + 1).padStart(2,"0")}</span>{index < researchDecisionFlow[lang].length - 1 && <i><b>{lang === "en" ? "YES" : "CÓ"}</b>↓</i>}</div><article><small>{step.phase}</small><h3>{step.title}</h3><p>{step.question}</p><strong>{step.evidence}</strong></article><aside><span>{lang === "en" ? "NO" : "KHÔNG"} →</span><p>{step.fail}</p></aside></div>)}
           <div className="research-feedback"><span aria-hidden="true">↺</span><p><strong>{lang === "en" ? "Review and improve the next decision" : "Đánh giá và cải thiện quyết định tiếp theo"}</strong><br/>{lang === "en" ? "Record source quality, rule compliance, execution, outcome, and what must change." : "Ghi lại chất lượng nguồn, mức tuân thủ quy tắc, thực thi, kết quả và điều cần thay đổi."}</p></div>
         </div>
         <div className="research-outcomes" aria-label={lang === "en" ? "Possible research decisions" : "Các quyết định nghiên cứu có thể có"}><article className="outcome-execute"><span>{lang === "en" ? "ALL GATES PASS" : "MỌI CỔNG ĐỀU ĐẠT"}</span><h3>{lang === "en" ? "Execute the written plan" : "Thực thi kế hoạch đã viết"}</h3></article><article className="outcome-wait"><span>{lang === "en" ? "TREND OR SETUP INCOMPLETE" : "XU HƯỚNG HOẶC MẪU HÌNH CHƯA XONG"}</span><h3>{lang === "en" ? "Wait on the watchlist" : "Chờ trong watchlist"}</h3></article><article className="outcome-reject"><span>{lang === "en" ? "DATA, THESIS, OR RISK FAILS" : "DỮ LIỆU, LUẬN ĐIỂM HOẶC RỦI RO KHÔNG ĐẠT"}</span><h3>{lang === "en" ? "Reject or restart research" : "Loại bỏ hoặc nghiên cứu lại"}</h3></article></div>
@@ -521,11 +649,11 @@ export default function Home() {
     </section>}
 
     {page === "tools" && <section className="content-page tools-page"><p className="eyebrow">{lang === "en" ? "Calculators" : "Máy tính"}</p><h1>{t.toolsTitle}</h1><p className="lede narrow">{lang === "en" ? "Use the book’s core formulas to test valuation, business quality, cash flow, and trade risk." : "Dùng các công thức cốt lõi trong sách để kiểm tra định giá, chất lượng doanh nghiệp, dòng tiền và rủi ro giao dịch."}</p><div className="tools-grid">
-      <article className="tool"><p className="tool-kind">{lang === "en" ? "Risk" : "Rủi ro"}</p><h2>{lang === "en" ? "Position size" : "Quy mô vị thế"}</h2><CalcField label={lang === "en" ? "Account value" : "Giá trị tài khoản"} value={account} onChange={setAccount}/><CalcField label={lang === "en" ? "Risk per trade (%)" : "Rủi ro mỗi giao dịch (%)"} value={riskPct} onChange={setRiskPct} step="0.1"/><CalcField label={lang === "en" ? "Entry price" : "Giá mua"} value={entry} onChange={setEntry}/><CalcField label={lang === "en" ? "Stop price" : "Giá cắt lỗ"} value={stop} onChange={setStop}/><div className="result"><span>{lang === "en" ? "Maximum shares" : "Số cổ phiếu tối đa"}</span><strong>{shares.toLocaleString()}</strong><small>{lang === "en" ? `Capital at risk: ${riskBudget.toLocaleString()}` : `Vốn chịu rủi ro: ${riskBudget.toLocaleString()}`}</small></div></article>
-      <article className="tool"><p className="tool-kind">{lang === "en" ? "Trade plan" : "Kế hoạch giao dịch"}</p><h2>{lang === "en" ? "Reward-to-risk" : "Lợi nhuận / rủi ro"}</h2><CalcField label={lang === "en" ? "Entry price" : "Giá mua"} value={entry} onChange={setEntry}/><CalcField label={lang === "en" ? "Stop price" : "Giá cắt lỗ"} value={stop} onChange={setStop}/><CalcField label={lang === "en" ? "Target price" : "Giá mục tiêu"} value={target} onChange={setTarget}/><div className={`result ${rr >= 2 ? "good" : "warn"}`}><span>Reward : Risk</span><strong>{Number.isFinite(rr) ? rr.toFixed(2) : "0.00"} : 1</strong><small>{rr >= 2 ? (lang === "en" ? "Meets the 2:1 minimum" : "Đạt mức tối thiểu 2:1") : (lang === "en" ? "Below the 2:1 minimum" : "Dưới mức tối thiểu 2:1")}</small></div></article>
-      <article className="tool"><p className="tool-kind">{lang === "en" ? "Valuation" : "Định giá"}</p><h2>{lang === "en" ? "P/E, P/B and PEG" : "P/E, P/B và PEG"}</h2><CalcField label={lang === "en" ? "Stock price" : "Giá cổ phiếu"} value={stockPrice} onChange={setStockPrice}/><CalcField label="EPS" value={eps} onChange={setEps}/><CalcField label="BVPS" value={bvps} onChange={setBvps}/><CalcField label={lang === "en" ? "EPS growth (%)" : "Tăng trưởng EPS (%)"} value={growth} onChange={setGrowth}/><div className="metric-results"><span>P/E<strong>{pe.toFixed(2)}</strong></span><span>P/B<strong>{pb.toFixed(2)}</strong></span><span>PEG<strong>{peg.toFixed(2)}</strong></span></div></article>
-      <article className="tool"><p className="tool-kind">{lang === "en" ? "Profitability" : "Khả năng sinh lời"}</p><h2>ROE &amp; ROA</h2><CalcField label={lang === "en" ? "Net income" : "Lợi nhuận ròng"} value={netIncome} onChange={setNetIncome}/><CalcField label={lang === "en" ? "Average equity" : "Vốn chủ sở hữu bình quân"} value={equity} onChange={setEquity}/><CalcField label={lang === "en" ? "Average assets" : "Tổng tài sản bình quân"} value={assets} onChange={setAssets}/><div className="metric-results two"><span>ROE<strong>{roe.toFixed(2)}%</strong></span><span>ROA<strong>{roa.toFixed(2)}%</strong></span></div></article>
-      <article className="tool"><p className="tool-kind">{lang === "en" ? "Cash and leverage" : "Tiền mặt và đòn bẩy"}</p><h2>{lang === "en" ? "FCF and debt" : "FCF và nợ"}</h2><CalcField label={lang === "en" ? "Operating cash flow" : "Dòng tiền hoạt động"} value={cfo} onChange={setCfo}/><CalcField label={lang === "en" ? "Capital expenditure" : "Chi tiêu vốn"} value={capex} onChange={setCapex}/><CalcField label={lang === "en" ? "Total debt" : "Tổng nợ"} value={debt} onChange={setDebt}/><CalcField label={lang === "en" ? "Shareholders’ equity" : "Vốn chủ sở hữu"} value={equity} onChange={setEquity}/><div className="metric-results two"><span>FCF<strong>{fcf.toLocaleString()}</strong></span><span>D/E<strong>{debtToEquity.toFixed(2)}</strong></span></div></article>
+      <article className="tool"><p className="tool-kind">{lang === "en" ? "Risk" : "Rủi ro"}</p><h2>{lang === "en" ? "Position size" : "Quy mô vị thế"}</h2><CalcField label={lang === "en" ? "Account value / buying power" : "Giá trị tài khoản / sức mua"} value={account} onChange={setAccount} min={0} invalid={account <= 0}/><CalcField label={lang === "en" ? "Risk per trade (%)" : "Rủi ro mỗi giao dịch (%)"} value={riskPct} onChange={setRiskPct} step="0.1" min={0} max={100} invalid={riskPct <= 0 || riskPct > 100}/><CalcField label={lang === "en" ? "Entry price" : "Giá mua"} value={entry} onChange={setEntry} min={0} invalid={entry <= 0}/><CalcField label={lang === "en" ? "Stop price" : "Giá cắt lỗ"} value={stop} onChange={setStop} min={0} invalid={stop < 0 || stop >= entry}/>{!positionValid && <p className="calculator-note error" role="status">{positionMessage}</p>}<div className={`result ${positionValid ? "" : "invalid"}`} aria-live="polite"><span>{lang === "en" ? "Maximum shares (no leverage)" : "Số cổ phiếu tối đa (không đòn bẩy)"}</span><strong>{shares?.toLocaleString() ?? "—"}</strong><small>{riskBudget === null || positionValue === null ? (lang === "en" ? "Correct the highlighted inputs" : "Sửa các dữ liệu được đánh dấu") : (lang === "en" ? `Risk budget: ${riskBudget.toLocaleString()} · Position value: ${positionValue.toLocaleString()}${capitalLimited ? " · Limited by buying power" : ""}` : `Ngân sách rủi ro: ${riskBudget.toLocaleString()} · Giá trị vị thế: ${positionValue.toLocaleString()}${capitalLimited ? " · Giới hạn bởi sức mua" : ""}`)}</small></div></article>
+      <article className="tool"><p className="tool-kind">{lang === "en" ? "Trade plan" : "Kế hoạch giao dịch"}</p><h2>{lang === "en" ? "Reward-to-risk" : "Lợi nhuận / rủi ro"}</h2><CalcField label={lang === "en" ? "Entry price" : "Giá mua"} value={entry} onChange={setEntry} min={0} invalid={entry <= 0}/><CalcField label={lang === "en" ? "Stop price" : "Giá cắt lỗ"} value={stop} onChange={setStop} min={0} invalid={stop < 0 || stop >= entry}/><CalcField label={lang === "en" ? "Target price" : "Giá mục tiêu"} value={target} onChange={setTarget} min={0} invalid={target <= entry}/>{!rewardRiskValid && <p className="calculator-note error" role="status">{rewardRiskMessage}</p>}<div className={`result ${rr === null ? "invalid" : rr >= 2 ? "good" : "warn"}`} aria-live="polite"><span>Reward : Risk</span><strong>{rr === null ? "—" : `${rr.toFixed(2)} : 1`}</strong><small>{rr === null ? (lang === "en" ? "Correct the highlighted inputs" : "Sửa các dữ liệu được đánh dấu") : rr >= 2 ? (lang === "en" ? "Meets the 2:1 minimum" : "Đạt mức tối thiểu 2:1") : (lang === "en" ? "Below the 2:1 minimum" : "Dưới mức tối thiểu 2:1")}</small></div></article>
+      <article className="tool"><p className="tool-kind">{lang === "en" ? "Valuation" : "Định giá"}</p><h2>{lang === "en" ? "P/E, P/B and PEG" : "P/E, P/B và PEG"}</h2><CalcField label={lang === "en" ? "Stock price" : "Giá cổ phiếu"} value={stockPrice} onChange={setStockPrice} min={0} invalid={stockPrice <= 0}/><CalcField label="EPS" value={eps} onChange={setEps} invalid={eps <= 0}/><CalcField label="BVPS" value={bvps} onChange={setBvps} invalid={bvps <= 0}/><CalcField label={lang === "en" ? "EPS growth (%)" : "Tăng trưởng EPS (%)"} value={growth} onChange={setGrowth} invalid={growth <= 0}/>{(pe === null || pb === null || peg === null) && <p className="calculator-note" role="status">{lang === "en" ? "— means the ratio is not meaningful for a zero or negative denominator." : "— nghĩa là tỷ lệ không có ý nghĩa khi mẫu số bằng không hoặc âm."}</p>}<div className="metric-results" aria-live="polite"><span>P/E<strong>{formatMetric(pe)}</strong></span><span>P/B<strong>{formatMetric(pb)}</strong></span><span>PEG<strong>{formatMetric(peg)}</strong></span></div></article>
+      <article className="tool"><p className="tool-kind">{lang === "en" ? "Profitability" : "Khả năng sinh lời"}</p><h2>ROE &amp; ROA</h2><CalcField label={lang === "en" ? "Net income" : "Lợi nhuận ròng"} value={netIncome} onChange={setNetIncome}/><CalcField label={lang === "en" ? "Average equity" : "Vốn chủ sở hữu bình quân"} value={averageEquity} onChange={setAverageEquity} min={0} invalid={averageEquity <= 0}/><CalcField label={lang === "en" ? "Average assets" : "Tổng tài sản bình quân"} value={assets} onChange={setAssets} min={0} invalid={assets <= 0}/>{(roe === null || roa === null) && <p className="calculator-note" role="status">{lang === "en" ? "Average equity and assets must be greater than zero." : "Vốn chủ sở hữu bình quân và tài sản phải lớn hơn không."}</p>}<div className="metric-results two" aria-live="polite"><span>ROE<strong>{formatMetric(roe, 2, "%")}</strong></span><span>ROA<strong>{formatMetric(roa, 2, "%")}</strong></span></div></article>
+      <article className="tool"><p className="tool-kind">{lang === "en" ? "Cash and leverage" : "Tiền mặt và đòn bẩy"}</p><h2>{lang === "en" ? "FCF and debt" : "FCF và nợ"}</h2><CalcField label={lang === "en" ? "Operating cash flow" : "Dòng tiền hoạt động"} value={cfo} onChange={setCfo}/><CalcField label={lang === "en" ? "Capital expenditure (positive outflow)" : "Chi tiêu vốn (nhập số dương)"} value={capex} onChange={setCapex} min={0} invalid={capex < 0}/><CalcField label={lang === "en" ? "Total debt" : "Tổng nợ"} value={debt} onChange={setDebt} min={0} invalid={debt < 0}/><CalcField label={lang === "en" ? "Shareholders’ equity" : "Vốn chủ sở hữu"} value={shareholdersEquity} onChange={setShareholdersEquity} min={0} invalid={shareholdersEquity <= 0}/>{(fcf === null || debtToEquity === null) && <p className="calculator-note" role="status">{lang === "en" ? "Enter CapEx as a positive outflow; debt must be non-negative and shareholders’ equity must be greater than zero." : "Nhập CapEx dưới dạng số dương; nợ không được âm và vốn chủ sở hữu phải lớn hơn không."}</p>}<div className="metric-results two" aria-live="polite"><span>FCF<strong>{fcf === null ? "—" : fcf.toLocaleString()}</strong></span><span>D/E<strong>{formatMetric(debtToEquity)}</strong></span></div></article>
     </div></section>}
 
     <footer><span>{t.brand}</span><p>{t.disclaimer}</p><span>2026</span></footer>
