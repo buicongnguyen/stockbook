@@ -15,13 +15,13 @@ export const metadata: Metadata = {
     title: "Stockbook — Investment Experience",
     description: "A bilingual field guide for disciplined stock investing, risk management, and decision-making.",
     url: "https://buicongnguyen.github.io/stockbook/en/",
-    images: [{ url: "https://buicongnguyen.github.io/stockbook/og.png", alt: "Stockbook — Think clearly before you risk capital." }],
+    images: [{ url: "https://buicongnguyen.github.io/stockbook/og-journey.png", alt: "Stockbook Journey — Process before profit." }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Stockbook — Investment Experience",
     description: "A bilingual field guide for disciplined stock investing, risk management, and decision-making.",
-    images: ["https://buicongnguyen.github.io/stockbook/og.png"],
+    images: ["https://buicongnguyen.github.io/stockbook/og-journey.png"],
   },
 };
 

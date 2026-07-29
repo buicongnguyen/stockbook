@@ -8,6 +8,7 @@ export const pageIds = Object.freeze([
   "strategies",
   "research",
   "tools",
+  "game",
 ]);
 
 export function readRoute(search, fallbackLang = "en") {

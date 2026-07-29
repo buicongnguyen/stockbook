@@ -12,7 +12,7 @@
     "export:pages": "node scripts/export-pages.mjs",
     "preview:pages": "node scripts/serve-pages.mjs",
     "pages": "npm run build && npm run export:pages",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/game-logic.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern gh-pages",
     "db:generate": "drizzle-kit generate"
   },

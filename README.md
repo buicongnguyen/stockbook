@@ -9,6 +9,8 @@ A bilingual English/Vietnamese learning site built from *Investment Experience*.
 - Stock-buying decision framework
 - Strategy comparison library
 - Position-size and reward-to-risk calculators
+- Stockbook Journey, a bilingual 12-stage decision-training game
+- Process-based scoring, campaign progression, and device-local save/resume
 - English and Vietnamese PDF downloads
 - Automated GitHub Pages deployment
 

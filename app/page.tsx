@@ -1,16 +1,18 @@
 "use client";
 
-import { type MouseEvent, useEffect, useState } from "react";
+import { lazy, type MouseEvent, Suspense, useEffect, useState } from "react";
 import { buildContentUrl, buildRouteSearch, calculateMetrics, readRoute } from "./stockbook-logic";
+
+const StockJourneyGame = lazy(() => import("./game/StockJourneyGame"));
 
 type Lang = "en" | "vi";
 type Theme = "light" | "dark";
 type FlowStyle = "gates" | "pipeline" | "cycle";
-type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" | "strategies" | "research" | "tools";
+type Page = "home" | "book" | "framework" | "cycles" | "macro" | "terminology" | "strategies" | "research" | "tools" | "game";
 type Block = { type: "p" | "li" | "h3" | "h4"; text: string };
 type Chapter = { id: string; number: number; title: string; blocks: Block[] };
 type Book = { language: Lang; title: string; chapters: Chapter[] };
-const navigationPages: Page[] = ["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "research", "tools"];
+const navigationPages: Page[] = ["home", "book", "framework", "cycles", "macro", "terminology", "strategies", "research", "tools", "game"];
 
 function normalizeBook(raw: Book): Book {
   return {...raw, chapters: raw.chapters.map(chapter => ({...chapter, blocks: chapter.blocks.flatMap(block => {
@@ -64,7 +66,7 @@ function BookBlock({ block, index }: { block: Block; index: number }) {
 
 const copy = {
   en: {
-    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Fed & macro", "Terminology", "Strategies", "Data lab", "Tools"],
+    brand: "Stockbook", nav: ["Home", "Book", "Framework", "Market cycles", "Fed & macro", "Terminology", "Strategies", "Data lab", "Tools", "Journey"],
     eyebrow: "A practical investing field guide",
     hero: "Think clearly before you risk capital.",
     sub: "A bilingual learning site built from Investment Experience—turning market lessons, risk rules, and trading psychology into a repeatable process.",
@@ -76,7 +78,7 @@ const copy = {
     disclaimer: "Educational content only. This site does not provide investment advice.", quote: "Protect capital first. Opportunity comes again.",
   },
   vi: {
-    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Fed & Vĩ mô", "Thuật ngữ", "Chiến lược", "Dữ liệu", "Công cụ"],
+    brand: "Sổ tay Chứng khoán", nav: ["Trang chủ", "Sách", "Quy trình", "Chu kỳ", "Fed & Vĩ mô", "Thuật ngữ", "Chiến lược", "Dữ liệu", "Công cụ", "Hành trình"],
     eyebrow: "Cẩm nang đầu tư thực chiến",
     hero: "Suy nghĩ rõ ràng trước khi mạo hiểm vốn.",
     sub: "Trang học tập song ngữ từ cuốn Kinh nghiệm đầu tư—biến bài học thị trường, nguyên tắc rủi ro và tâm lý giao dịch thành một quy trình có thể lặp lại.",
@@ -562,6 +564,7 @@ export default function Home({ localizedLang = null }: { localizedLang?: Lang | 
         <div className="hero-card"><p className="folio">01 — 05</p><h2>{t.bookTitle}</h2><p>{t.bookIntro}</p><div className="rule"/><p className="quote">“{t.quote}”</p></div>
       </section>
       <section className="principles"><article><span>01</span><h3>{lang === "en" ? "Filter the market" : "Lọc thị trường"}</h3><p>{lang === "en" ? "A good stock cannot escape a hostile market forever." : "Cổ phiếu tốt không thể mãi thoát khỏi một thị trường xấu."}</p></article><article><span>02</span><h3>{lang === "en" ? "Define the risk" : "Xác định rủi ro"}</h3><p>{lang === "en" ? "Know the exit and position size before entering." : "Biết điểm thoát và quy mô vị thế trước khi mua."}</p></article><article><span>03</span><h3>{lang === "en" ? "Review the process" : "Đánh giá quy trình"}</h3><p>{lang === "en" ? "Judge decisions by rule compliance, not one outcome." : "Đánh giá quyết định bằng mức tuân thủ, không chỉ một kết quả."}</p></article></section>
+      <section className="journey-teaser"><div><p className="eyebrow">{lang === "en" ? "New interactive practice" : "Luyện tập tương tác mới"}</p><h2>{lang === "en" ? "Carry capital through an uncertain market." : "Mang vốn đi qua một thị trường bất định."}</h2><p>{lang === "en" ? "Twelve bilingual stages turn candles, moving averages, valuation, and risk into decisions you can practice—without rewarding lucky guesses." : "Mười hai chặng song ngữ biến nến, đường trung bình, định giá và rủi ro thành quyết định có thể luyện tập—không thưởng cho dự đoán may mắn."}</p></div><a href={pageHref("game")} onClick={event => handlePageLink(event, "game")}>{lang === "en" ? "Begin Stockbook Journey" : "Bắt đầu Hành Trình Stockbook"} →</a></section>
     </>}
 
     {page === "book" && <section className="reader-shell">
@@ -655,6 +658,8 @@ export default function Home({ localizedLang = null }: { localizedLang?: Lang | 
       <article className="tool"><p className="tool-kind">{lang === "en" ? "Profitability" : "Khả năng sinh lời"}</p><h2>ROE &amp; ROA</h2><CalcField label={lang === "en" ? "Net income" : "Lợi nhuận ròng"} value={netIncome} onChange={setNetIncome}/><CalcField label={lang === "en" ? "Average equity" : "Vốn chủ sở hữu bình quân"} value={averageEquity} onChange={setAverageEquity} min={0} invalid={averageEquity <= 0}/><CalcField label={lang === "en" ? "Average assets" : "Tổng tài sản bình quân"} value={assets} onChange={setAssets} min={0} invalid={assets <= 0}/>{(roe === null || roa === null) && <p className="calculator-note" role="status">{lang === "en" ? "Average equity and assets must be greater than zero." : "Vốn chủ sở hữu bình quân và tài sản phải lớn hơn không."}</p>}<div className="metric-results two" aria-live="polite"><span>ROE<strong>{formatMetric(roe, 2, "%")}</strong></span><span>ROA<strong>{formatMetric(roa, 2, "%")}</strong></span></div></article>
       <article className="tool"><p className="tool-kind">{lang === "en" ? "Cash and leverage" : "Tiền mặt và đòn bẩy"}</p><h2>{lang === "en" ? "FCF and debt" : "FCF và nợ"}</h2><CalcField label={lang === "en" ? "Operating cash flow" : "Dòng tiền hoạt động"} value={cfo} onChange={setCfo}/><CalcField label={lang === "en" ? "Capital expenditure (positive outflow)" : "Chi tiêu vốn (nhập số dương)"} value={capex} onChange={setCapex} min={0} invalid={capex < 0}/><CalcField label={lang === "en" ? "Total debt" : "Tổng nợ"} value={debt} onChange={setDebt} min={0} invalid={debt < 0}/><CalcField label={lang === "en" ? "Shareholders’ equity" : "Vốn chủ sở hữu"} value={shareholdersEquity} onChange={setShareholdersEquity} min={0} invalid={shareholdersEquity <= 0}/>{(fcf === null || debtToEquity === null) && <p className="calculator-note" role="status">{lang === "en" ? "Enter CapEx as a positive outflow; debt must be non-negative and shareholders’ equity must be greater than zero." : "Nhập CapEx dưới dạng số dương; nợ không được âm và vốn chủ sở hữu phải lớn hơn không."}</p>}<div className="metric-results two" aria-live="polite"><span>FCF<strong>{fcf === null ? "—" : fcf.toLocaleString()}</strong></span><span>D/E<strong>{formatMetric(debtToEquity)}</strong></span></div></article>
     </div></section>}
+
+    {page === "game" && <Suspense fallback={<section className="game-route-loading" role="status">{lang === "en" ? "Opening Stockbook Journey…" : "Đang mở Hành Trình Stockbook…"}</section>}><StockJourneyGame lang={lang}/></Suspense>}
 
     <footer><span>{t.brand}</span><p>{t.disclaimer}</p><span>2026</span></footer>
   </main>;

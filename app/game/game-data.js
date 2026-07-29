@@ -1,0 +1,586 @@
+const text = (en, vi) => Object.freeze({ en, vi });
+
+const evidence = (id, en, vi, weight = 1, relevant = true) =>
+  Object.freeze({ id, label: text(en, vi), weight, relevant });
+
+function makeBars(closes, volumes) {
+  return closes.map((close, index) => {
+    const open = index === 0 ? close * 0.992 : closes[index - 1];
+    const upper = Math.max(open, close);
+    const lower = Math.min(open, close);
+    return {
+      open: Number(open.toFixed(2)),
+      high: Number((upper * 1.012).toFixed(2)),
+      low: Number((lower * 0.988).toFixed(2)),
+      close,
+      volume: volumes[index] ?? volumes.at(-1) ?? 100,
+    };
+  });
+}
+
+const score = (values) => Object.freeze({
+  buy: 20,
+  add: 20,
+  wait: 60,
+  hold: 60,
+  reduce: 50,
+  sell: 50,
+  ...values,
+});
+
+export const actionCopy = Object.freeze({
+  buy: text("Buy", "Mua"),
+  add: text("Add", "Mua thêm"),
+  wait: text("Wait", "Chờ"),
+  hold: text("Hold", "Nắm giữ"),
+  reduce: text("Reduce", "Giảm vị thế"),
+  sell: text("Sell", "Bán"),
+});
+
+export const horizons = Object.freeze([
+  { id: "daily", label: text("Daily trading decision", "Quyết định giao dịch theo ngày") },
+  { id: "quarterly", label: text("Quarterly business review", "Đánh giá doanh nghiệp theo quý") },
+  { id: "years", label: text("Multi-year investment view", "Góc nhìn đầu tư nhiều năm") },
+]);
+
+export const toolCopy = Object.freeze({
+  volume: {
+    name: text("Volume Lens", "Kính Khối Lượng"),
+    description: text("Reveals whether participation confirms the price move.", "Cho biết mức độ tham gia có xác nhận biến động giá hay không."),
+  },
+  trend: {
+    name: text("Trend Compass", "La Bàn Xu Hướng"),
+    description: text("Adds MA20, MA50, and MA200 trend context.", "Bổ sung bối cảnh xu hướng MA20, MA50 và MA200."),
+  },
+  valuation: {
+    name: text("Valuation Ledger", "Sổ Định Giá"),
+    description: text("Compares valuation, growth, quality, cash flow, and debt.", "So sánh định giá, tăng trưởng, chất lượng, dòng tiền và nợ."),
+  },
+  risk: {
+    name: text("Risk Shield", "Lá Chắn Rủi Ro"),
+    description: text("Turns account risk into a controlled position size.", "Biến rủi ro tài khoản thành quy mô vị thế có kiểm soát."),
+  },
+  journal: {
+    name: text("Decision Journal", "Nhật Ký Quyết Định"),
+    description: text("Keeps durable mastery separate from short-term profit.", "Tách biệt năng lực bền vững khỏi lợi nhuận ngắn hạn."),
+  },
+});
+
+export const campaigns = Object.freeze([
+  {
+    id: "signals",
+    number: 1,
+    instrument: "AUR",
+    startCash: 10000,
+    name: text("Signal Alley", "Phố Tín Hiệu"),
+    kicker: text("Read what price actually says", "Đọc điều giá thực sự thể hiện"),
+    description: text(
+      "Learn candle structure, support zones, and the difference between participation and noise.",
+      "Học cấu trúc nến, vùng hỗ trợ và khác biệt giữa sự tham gia thật với nhiễu thị trường.",
+    ),
+    accent: "#c4892f",
+  },
+  {
+    id: "trend",
+    number: 2,
+    instrument: "BRG",
+    startCash: 10000,
+    name: text("Trend Bridge", "Cầu Xu Hướng"),
+    kicker: text("Respect direction and timeframe", "Tôn trọng hướng đi và khung thời gian"),
+    description: text(
+      "Use moving averages, market regimes, and invalidation to cross uncertain price structures.",
+      "Dùng đường trung bình, trạng thái thị trường và điểm vô hiệu để vượt qua cấu trúc giá bất định.",
+    ),
+    accent: "#347d68",
+  },
+  {
+    id: "business",
+    number: 3,
+    instrument: "NVA",
+    startCash: 10000,
+    name: text("Business Quarter", "Khu Doanh Nghiệp"),
+    kicker: text("Look behind the ticker", "Nhìn phía sau mã cổ phiếu"),
+    description: text(
+      "Compare valuation with peers, growth, cash generation, and balance-sheet quality.",
+      "So sánh định giá với doanh nghiệp cùng ngành, tăng trưởng, dòng tiền và chất lượng bảng cân đối.",
+    ),
+    accent: "#466da5",
+  },
+  {
+    id: "risk",
+    number: 4,
+    instrument: "SUM",
+    startCash: 10000,
+    name: text("Risk Summit", "Đỉnh Quản Trị Rủi Ro"),
+    kicker: text("Survive long enough to learn", "Tồn tại đủ lâu để học hỏi"),
+    description: text(
+      "Size positions, resist rumor-driven action, and protect capital when a thesis is invalidated.",
+      "Xác định quy mô vị thế, chống lại hành động theo tin đồn và bảo vệ vốn khi luận điểm bị vô hiệu.",
+    ),
+    accent: "#8b5044",
+  },
+]);
+
+export const scenarios = Object.freeze([
+  {
+    id: "signal-candle",
+    campaignId: "signals",
+    stage: 1,
+    instrument: "AUR",
+    horizon: "daily",
+    title: text("The First Candle", "Cây Nến Đầu Tiên"),
+    objective: text("Separate observation from prediction.", "Tách quan sát khỏi dự đoán."),
+    event: text(
+      "AUR closes with a long upper wick after an early rally. No supporting news has been released.",
+      "AUR đóng cửa với bóng nến trên dài sau nhịp tăng đầu phiên. Không có tin hỗ trợ nào được công bố.",
+    ),
+    question: text(
+      "Which evidence matters before risking capital?",
+      "Bằng chứng nào quan trọng trước khi mạo hiểm vốn?",
+    ),
+    evidence: [
+      evidence("upper-wick", "Sellers rejected the intraday high", "Bên bán từ chối mức giá cao trong phiên", 2),
+      evidence("weak-close", "The close is well below the high", "Giá đóng cửa thấp hơn nhiều so với đỉnh", 2),
+      evidence("single-bar", "One candle is insufficient without context", "Một cây nến là chưa đủ nếu thiếu bối cảnh", 3),
+      evidence("green-means-buy", "Any green candle is an automatic buy", "Bất kỳ nến xanh nào cũng là tín hiệu mua tự động", 2, false),
+    ],
+    bars: makeBars([96, 97, 98, 99, 100, 101, 100.4, 101.2, 100.8, 101.1, 101.4, 101.0], [90, 94, 100, 106, 111, 119, 123, 117, 108, 103, 126, 132]),
+    future: { open: 100.8, high: 102.1, low: 98.8, close: 99.4, volume: 145 },
+    stopOptions: [96.5, 98.5, 99.5],
+    recommendedStop: 98.5,
+    actionScores: score({ wait: 100, buy: 25 }),
+    disciplineScores: score({ wait: 100, buy: 20 }),
+    lesson: text(
+      "The candle reports rejection, but one bar cannot establish a complete setup. Waiting preserves optionality.",
+      "Cây nến cho thấy sự từ chối, nhưng một thanh giá chưa tạo thành mẫu hình hoàn chỉnh. Chờ đợi giúp giữ quyền lựa chọn.",
+    ),
+    outcome: text(
+      "Price falls the next day. Waiting avoided a trade based on an isolated candle.",
+      "Giá giảm trong ngày kế tiếp. Chờ đợi giúp tránh giao dịch chỉ dựa trên một cây nến đơn lẻ.",
+    ),
+    book: text("Chapter 2 — Candles, support, resistance, and market psychology", "Chương 2 — Nến, hỗ trợ, kháng cự và tâm lý thị trường"),
+    toolUnlock: "volume",
+  },
+  {
+    id: "signal-support",
+    campaignId: "signals",
+    stage: 2,
+    instrument: "AUR",
+    horizon: "daily",
+    title: text("The Price Floor", "Sàn Giá"),
+    objective: text("Read support as a zone, not a magic number.", "Đọc hỗ trợ như một vùng, không phải con số thần kỳ."),
+    event: text(
+      "AUR revisits the 97–99 area where buyers previously appeared. The latest candle closes back above the zone.",
+      "AUR quay lại vùng 97–99, nơi người mua từng xuất hiện. Cây nến mới nhất đóng cửa trở lại phía trên vùng này.",
+    ),
+    question: text("Is the response at support strong enough for a controlled plan?", "Phản ứng tại hỗ trợ có đủ mạnh cho một kế hoạch được kiểm soát không?"),
+    evidence: [
+      evidence("zone", "Several reactions cluster between 97 and 99", "Nhiều phản ứng tập trung trong vùng 97 đến 99", 3),
+      evidence("reclaim", "Price closes back above the support zone", "Giá đóng cửa trở lại phía trên vùng hỗ trợ", 2),
+      evidence("defined-risk", "Invalidation can sit below the zone", "Điểm vô hiệu có thể đặt dưới vùng hỗ trợ", 2),
+      evidence("exact-line", "Support guarantees that 98.00 cannot break", "Hỗ trợ bảo đảm mức 98,00 không thể bị phá vỡ", 2, false),
+    ],
+    bars: makeBars([103, 102, 100.8, 99.6, 98.3, 99.2, 100.1, 99.0, 98.1, 99.4, 100.2, 101.0], [122, 116, 109, 104, 130, 118, 110, 101, 134, 128, 120, 126]),
+    future: { open: 101.2, high: 103.0, low: 99.1, close: 102.4, volume: 137 },
+    stopOptions: [96.5, 98.0, 100.0],
+    recommendedStop: 96.5,
+    actionScores: score({ buy: 90, add: 85, hold: 92, wait: 85, reduce: 58, sell: 48 }),
+    disciplineScores: score({ buy: 90, add: 86, hold: 94, wait: 90, reduce: 62, sell: 52 }),
+    lesson: text(
+      "Support is an area of repeated demand. A small, predefined-risk entry can be reasonable, and waiting for more confirmation is also defensible.",
+      "Hỗ trợ là vùng cầu lặp lại. Một vị thế nhỏ với rủi ro xác định trước có thể hợp lý, và chờ xác nhận thêm cũng là lựa chọn có cơ sở.",
+    ),
+    outcome: text(
+      "The support zone holds for the next session, but the plan—not the bounce—determines decision quality.",
+      "Vùng hỗ trợ được giữ trong phiên kế tiếp, nhưng chính kế hoạch—không phải nhịp bật—quyết định chất lượng quyết định.",
+    ),
+    book: text("Chapter 2 — Support, resistance, and technical context", "Chương 2 — Hỗ trợ, kháng cự và bối cảnh kỹ thuật"),
+  },
+  {
+    id: "signal-breakout",
+    campaignId: "signals",
+    stage: 3,
+    instrument: "AUR",
+    horizon: "daily",
+    title: text("The Noisy Breakout", "Cú Bứt Phá Ồn Ào"),
+    objective: text("Use participation to judge a breakout.", "Dùng mức độ tham gia để đánh giá cú bứt phá."),
+    event: text(
+      "AUR closes above 106 after six weeks under resistance. Volume expands to almost twice its recent average.",
+      "AUR đóng cửa trên 106 sau sáu tuần nằm dưới kháng cự. Khối lượng tăng gần gấp đôi mức trung bình gần đây.",
+    ),
+    question: text("Which clues make this breakout more credible?", "Dấu hiệu nào làm cú bứt phá này đáng tin hơn?"),
+    evidence: [
+      evidence("close-above", "Price closes decisively above resistance", "Giá đóng cửa dứt khoát phía trên kháng cự", 3),
+      evidence("volume", "Volume expands well above its baseline", "Khối lượng tăng mạnh so với mức nền", 3),
+      evidence("tight-base", "The breakout follows a controlled base", "Cú bứt phá xuất hiện sau nền giá được kiểm soát", 2),
+      evidence("headline", "A popular forum calls it a guaranteed winner", "Một diễn đàn nổi tiếng gọi đây là cổ phiếu chắc chắn thắng", 2, false),
+    ],
+    bars: makeBars([99, 100, 101, 102, 101.5, 102.4, 103, 102.7, 103.5, 104, 104.4, 106.8], [82, 86, 80, 91, 76, 73, 79, 71, 75, 84, 88, 172]),
+    future: { open: 107.0, high: 111.6, low: 105.8, close: 110.8, volume: 158 },
+    stopOptions: [101.8, 104.8, 106.6],
+    recommendedStop: 104.8,
+    actionScores: score({ buy: 100, add: 95, hold: 92, wait: 72, reduce: 42, sell: 28 }),
+    disciplineScores: score({ buy: 100, add: 96, hold: 95, wait: 80, reduce: 48, sell: 32 }),
+    lesson: text(
+      "A decisive close, expanding volume, and a controlled base form a stronger setup. The stop still defines the cost of being wrong.",
+      "Giá đóng cửa dứt khoát, khối lượng tăng và nền giá được kiểm soát tạo nên mẫu hình mạnh hơn. Điểm cắt lỗ vẫn xác định chi phí khi nhận định sai.",
+    ),
+    outcome: text(
+      "The breakout follows through. A profitable outcome does not remove the need for a controlled position size.",
+      "Cú bứt phá tiếp tục đi lên. Kết quả có lãi không loại bỏ yêu cầu kiểm soát quy mô vị thế.",
+    ),
+    book: text("Chapter 2 and SEPA Chapter 5 — Volume-confirmed breakouts", "Chương 2 và SEPA Chương 5 — Bứt phá được khối lượng xác nhận"),
+    toolUnlock: "trend",
+  },
+  {
+    id: "trend-ma20",
+    campaignId: "trend",
+    stage: 4,
+    instrument: "BRG",
+    horizon: "daily",
+    title: text("Follow the Road", "Đi Theo Con Đường"),
+    objective: text("Read a pullback inside a healthy trend.", "Đọc nhịp điều chỉnh trong một xu hướng khỏe."),
+    event: text(
+      "BRG remains above rising MA50 and MA200. A quiet pullback approaches the rising MA20.",
+      "BRG vẫn nằm trên MA50 và MA200 đang tăng. Một nhịp điều chỉnh yên ắng tiến gần MA20 đang đi lên.",
+    ),
+    question: text("Does this look like normal digestion or trend failure?", "Đây giống tích lũy bình thường hay thất bại xu hướng?"),
+    evidence: [
+      evidence("rising-ma", "MA20, MA50, and MA200 slope upward", "MA20, MA50 và MA200 đều dốc lên", 3),
+      evidence("quiet-volume", "Pullback volume contracts", "Khối lượng trong nhịp điều chỉnh thu hẹp", 2),
+      evidence("above-long-ma", "Price remains above MA50 and MA200", "Giá vẫn nằm trên MA50 và MA200", 2),
+      evidence("one-red", "One red candle means the uptrend has ended", "Một nến đỏ có nghĩa xu hướng tăng đã kết thúc", 2, false),
+    ],
+    bars: makeBars([48, 49, 50.2, 51, 52.4, 53.2, 54, 55.1, 54.7, 54.2, 53.9, 54.3], [105, 112, 119, 128, 132, 126, 137, 142, 110, 96, 88, 94]),
+    ma: {
+      ma20: [47.2, 47.8, 48.5, 49.1, 49.8, 50.5, 51.2, 51.9, 52.5, 52.9, 53.2, 53.5],
+      ma50: [45.1, 45.5, 45.9, 46.3, 46.8, 47.2, 47.7, 48.1, 48.6, 49.0, 49.4, 49.8],
+      ma200: [41.2, 41.4, 41.6, 41.8, 42.0, 42.2, 42.4, 42.6, 42.8, 43.0, 43.2, 43.4],
+    },
+    future: { open: 54.4, high: 57.2, low: 53.8, close: 56.7, volume: 131 },
+    stopOptions: [51.7, 53.2, 54.0],
+    recommendedStop: 51.7,
+    actionScores: score({ buy: 88, add: 85, hold: 100, wait: 82, reduce: 45, sell: 20 }),
+    disciplineScores: score({ buy: 90, add: 86, hold: 100, wait: 88, reduce: 55, sell: 25 }),
+    lesson: text(
+      "A low-volume pullback toward a rising average can be normal. Position state and predefined risk determine whether to buy, add, hold, or wait.",
+      "Nhịp điều chỉnh khối lượng thấp về đường trung bình đang tăng có thể là bình thường. Trạng thái vị thế và rủi ro xác định trước quyết định mua, mua thêm, giữ hay chờ.",
+    ),
+    outcome: text("BRG resumes its advance after respecting MA20.", "BRG tiếp tục tăng sau khi tôn trọng MA20."),
+    book: text("Chapter 4 and SEPA Chapter 2 — Trend templates", "Chương 4 và SEPA Chương 2 — Mẫu hình xu hướng"),
+  },
+  {
+    id: "trend-regime",
+    campaignId: "trend",
+    stage: 5,
+    instrument: "BRG",
+    horizon: "daily",
+    title: text("Three Moving Paths", "Ba Con Đường Trung Bình"),
+    objective: text("Separate short rallies from long-term health.", "Phân biệt nhịp hồi ngắn với sức khỏe dài hạn."),
+    event: text(
+      "BRG rallies above MA20, but MA50 is falling and price remains below a declining MA200.",
+      "BRG hồi lên trên MA20, nhưng MA50 đang giảm và giá vẫn nằm dưới MA200 dốc xuống.",
+    ),
+    question: text("Which timeframe controls the larger risk?", "Khung thời gian nào chi phối rủi ro lớn hơn?"),
+    evidence: [
+      evidence("below-ma200", "Price remains below a falling MA200", "Giá vẫn nằm dưới MA200 đang giảm", 3),
+      evidence("falling-ma50", "MA50 continues to slope downward", "MA50 tiếp tục dốc xuống", 2),
+      evidence("short-rally", "The MA20 reclaim is only short-term evidence", "Việc lấy lại MA20 chỉ là bằng chứng ngắn hạn", 2),
+      evidence("ma20-enough", "Above MA20 means every timeframe is bullish", "Trên MA20 nghĩa là mọi khung thời gian đều tăng", 2, false),
+    ],
+    bars: makeBars([64, 62, 60, 58, 57, 55, 54, 55, 56, 57.2, 58.1, 58.8], [146, 139, 150, 143, 136, 129, 124, 116, 110, 105, 108, 112]),
+    ma: {
+      ma20: [63.2, 62.4, 61.4, 60.2, 59.1, 58.0, 57.0, 56.4, 56.1, 56.3, 56.7, 57.1],
+      ma50: [67.5, 66.8, 66.1, 65.4, 64.7, 64.0, 63.3, 62.6, 61.9, 61.2, 60.5, 59.8],
+      ma200: [72.0, 71.6, 71.2, 70.8, 70.4, 70.0, 69.6, 69.2, 68.8, 68.4, 68.0, 67.6],
+    },
+    future: { open: 58.6, high: 59.3, low: 55.2, close: 56.0, volume: 132 },
+    stopOptions: [53.8, 56.2, 57.8],
+    recommendedStop: 56.2,
+    actionScores: score({ wait: 100, sell: 95, reduce: 88, hold: 42, buy: 15, add: 10 }),
+    disciplineScores: score({ wait: 100, sell: 95, reduce: 90, hold: 45, buy: 10, add: 5 }),
+    lesson: text(
+      "A short-term rally does not repair a declining long-term structure. The larger regime deserves more weight.",
+      "Nhịp hồi ngắn hạn không sửa được cấu trúc dài hạn đang suy giảm. Trạng thái lớn hơn cần được ưu tiên.",
+    ),
+    outcome: text("The rally fades while the declining long-term trend remains intact.", "Nhịp hồi suy yếu trong khi xu hướng dài hạn giảm vẫn còn nguyên."),
+    book: text("SEPA Chapters 1–2 — Market stages and moving-average alignment", "SEPA Chương 1–2 — Giai đoạn thị trường và sự đồng thuận đường trung bình"),
+  },
+  {
+    id: "trend-false-break",
+    campaignId: "trend",
+    stage: 6,
+    instrument: "BRG",
+    horizon: "daily",
+    title: text("The False Bridge", "Cây Cầu Giả"),
+    objective: text("Act when a breakout loses its invalidation level.", "Hành động khi cú bứt phá mất mức vô hiệu."),
+    event: text(
+      "BRG briefly moves above resistance, then closes back inside the base on expanding volume.",
+      "BRG vượt kháng cự trong thời gian ngắn, sau đó đóng cửa trở lại trong nền giá với khối lượng tăng.",
+    ),
+    question: text("What changed after the failed close?", "Điều gì đã thay đổi sau phiên đóng cửa thất bại?"),
+    evidence: [
+      evidence("failed-close", "Price closes back below the breakout level", "Giá đóng cửa trở lại dưới mức bứt phá", 3),
+      evidence("heavy-volume", "Selling volume expands", "Khối lượng bán tăng", 3),
+      evidence("invalidated", "The original trigger is invalidated", "Điểm kích hoạt ban đầu đã bị vô hiệu", 2),
+      evidence("hope", "The original target must still be reached eventually", "Mục tiêu ban đầu cuối cùng chắc chắn vẫn sẽ đạt được", 2, false),
+    ],
+    bars: makeBars([72, 73, 73.5, 74, 73.8, 74.2, 74.5, 74.1, 74.7, 75, 77.1, 73.9], [92, 88, 84, 80, 78, 75, 74, 72, 76, 81, 151, 169]),
+    ma: {
+      ma20: [71.3, 71.7, 72.1, 72.5, 72.8, 73.1, 73.4, 73.6, 73.9, 74.2, 74.6, 74.5],
+      ma50: [69.1, 69.4, 69.7, 70.0, 70.3, 70.6, 70.9, 71.2, 71.5, 71.8, 72.1, 72.4],
+      ma200: [64.0, 64.2, 64.4, 64.6, 64.8, 65.0, 65.2, 65.4, 65.6, 65.8, 66.0, 66.2],
+    },
+    future: { open: 73.5, high: 74.0, low: 68.8, close: 69.7, volume: 181 },
+    stopOptions: [69.0, 72.8, 74.0],
+    recommendedStop: 72.8,
+    actionScores: score({ wait: 100, sell: 100, reduce: 88, hold: 25, buy: 5, add: 0 }),
+    disciplineScores: score({ wait: 100, sell: 100, reduce: 90, hold: 20, buy: 0, add: 0 }),
+    lesson: text(
+      "The failed close and heavy selling invalidate the breakout. Exiting is rule-following, not an admission of personal failure.",
+      "Phiên đóng cửa thất bại và lực bán mạnh làm vô hiệu cú bứt phá. Thoát vị thế là tuân thủ quy tắc, không phải thừa nhận thất bại cá nhân.",
+    ),
+    outcome: text("BRG falls further after the failed breakout.", "BRG tiếp tục giảm sau cú bứt phá thất bại."),
+    book: text("SEPA Chapters 4–6 — Failed breakouts and capital protection", "SEPA Chương 4–6 — Bứt phá thất bại và bảo vệ vốn"),
+    toolUnlock: "valuation",
+  },
+  {
+    id: "business-peers",
+    campaignId: "business",
+    stage: 7,
+    instrument: "NVA",
+    horizon: "quarterly",
+    title: text("Cheap Compared With What?", "Rẻ So Với Cái Gì?"),
+    objective: text("Compare valuation inside a relevant peer group.", "So sánh định giá trong nhóm doanh nghiệp phù hợp."),
+    event: text(
+      "NVA trades at 17× earnings. Its software peers trade between 20× and 27× while showing similar margins.",
+      "NVA giao dịch ở mức P/E 17 lần. Các doanh nghiệp phần mềm cùng ngành giao dịch từ 20 đến 27 lần với biên lợi nhuận tương tự.",
+    ),
+    question: text("Which comparisons are meaningful?", "So sánh nào có ý nghĩa?"),
+    evidence: [
+      evidence("same-sector", "Compare NVA with software peers", "So sánh NVA với doanh nghiệp phần mềm cùng ngành", 3),
+      evidence("growth", "Check whether earnings growth is comparable", "Kiểm tra tăng trưởng lợi nhuận có tương đồng hay không", 2),
+      evidence("quality", "Compare margins and balance-sheet quality", "So sánh biên lợi nhuận và chất lượng bảng cân đối", 2),
+      evidence("utility", "Compare directly with a regulated utility at 8× P/E", "So sánh trực tiếp với doanh nghiệp điện nước P/E 8 lần", 2, false),
+    ],
+    metrics: [
+      { label: text("NVA P/E", "P/E NVA"), value: "17×" },
+      { label: text("Peer median", "Trung vị cùng ngành"), value: "23×" },
+      { label: text("EPS growth", "Tăng trưởng EPS"), value: "19%" },
+      { label: text("Net cash", "Tiền mặt ròng"), value: "Yes / Có" },
+    ],
+    bars: makeBars([38, 38.4, 39, 39.2, 39.7, 40, 40.3, 40.1, 40.8, 41.2, 41, 41.5], [88, 91, 94, 92, 96, 99, 102, 97, 104, 108, 101, 106]),
+    future: { open: 41.6, high: 43.8, low: 40.9, close: 43.1, volume: 118 },
+    stopOptions: [38.8, 40.0, 41.0],
+    recommendedStop: 38.8,
+    actionScores: score({ buy: 88, add: 84, hold: 95, wait: 85, reduce: 45, sell: 30 }),
+    disciplineScores: score({ buy: 90, add: 86, hold: 95, wait: 90, reduce: 50, sell: 35 }),
+    lesson: text(
+      "A lower P/E becomes useful only after confirming that peers, growth, and quality are comparable.",
+      "P/E thấp chỉ hữu ích sau khi xác nhận doanh nghiệp cùng ngành, tăng trưởng và chất lượng có thể so sánh.",
+    ),
+    outcome: text("NVA rises after a solid report, but the peer comparison—not the price rise—supports the analysis.", "NVA tăng sau báo cáo tốt, nhưng chính so sánh cùng ngành—không phải mức tăng giá—hỗ trợ phân tích."),
+    book: text("Chapter 2 — P/E and same-industry comparisons", "Chương 2 — P/E và so sánh trong cùng ngành"),
+  },
+  {
+    id: "business-peg",
+    campaignId: "business",
+    stage: 8,
+    instrument: "NVA",
+    horizon: "years",
+    title: text("The Expensive Grower", "Doanh Nghiệp Tăng Trưởng Đắt Giá"),
+    objective: text("Put valuation beside durable growth.", "Đặt định giá bên cạnh tăng trưởng bền vững."),
+    event: text(
+      "NVA's P/E expands to 28× while expected earnings growth remains near 25%. Revenue quality and free cash flow are improving.",
+      "P/E của NVA tăng lên 28 lần trong khi tăng trưởng lợi nhuận kỳ vọng gần 25%. Chất lượng doanh thu và dòng tiền tự do đang cải thiện.",
+    ),
+    question: text("Does the higher P/E automatically make NVA uninvestable?", "P/E cao hơn có tự động khiến NVA không thể đầu tư không?"),
+    evidence: [
+      evidence("peg-context", "P/E should be considered beside growth", "P/E cần được xem xét cùng tăng trưởng", 3),
+      evidence("cash-quality", "Free cash flow supports earnings quality", "Dòng tiền tự do hỗ trợ chất lượng lợi nhuận", 2),
+      evidence("durability", "Growth durability matters more than one forecast", "Độ bền tăng trưởng quan trọng hơn một dự báo", 2),
+      evidence("peg-guarantee", "PEG near 1 guarantees future returns", "PEG gần 1 bảo đảm lợi nhuận tương lai", 2, false),
+    ],
+    metrics: [
+      { label: text("P/E", "P/E"), value: "28×" },
+      { label: text("Expected EPS growth", "Tăng trưởng EPS kỳ vọng"), value: "25%" },
+      { label: text("PEG", "PEG"), value: "1.12" },
+      { label: text("FCF margin", "Biên FCF"), value: "18% ↑" },
+    ],
+    bars: makeBars([43, 44, 45.2, 46, 47.4, 48.1, 49, 50.3, 51, 52.2, 51.8, 53], [99, 104, 111, 108, 116, 120, 118, 125, 129, 136, 121, 132]),
+    future: { open: 53.2, high: 54.0, low: 50.2, close: 51.0, volume: 141 },
+    stopOptions: [47.8, 50.0, 52.0],
+    recommendedStop: 47.8,
+    actionScores: score({ buy: 75, add: 70, hold: 92, wait: 90, reduce: 72, sell: 55 }),
+    disciplineScores: score({ buy: 78, add: 72, hold: 95, wait: 95, reduce: 78, sell: 60 }),
+    lesson: text(
+      "PEG is context, not a guarantee. A patient hold or wait can both be reasonable when quality is strong but valuation leaves little room for error.",
+      "PEG là bối cảnh, không phải bảo đảm. Giữ kiên nhẫn hoặc chờ đợi đều có thể hợp lý khi chất lượng tốt nhưng định giá để lại ít biên sai số.",
+    ),
+    outcome: text("NVA corrects despite improving fundamentals, demonstrating that quality and short-term price can diverge.", "NVA điều chỉnh dù nền tảng cải thiện, cho thấy chất lượng và giá ngắn hạn có thể đi khác hướng."),
+    book: text("Chapter 2 — PEG, growth, and valuation limits", "Chương 2 — PEG, tăng trưởng và giới hạn định giá"),
+  },
+  {
+    id: "business-trap",
+    campaignId: "business",
+    stage: 9,
+    instrument: "NVA",
+    horizon: "quarterly",
+    title: text("The Value Trap", "Bẫy Giá Trị"),
+    objective: text("Recognize when a low multiple reflects deterioration.", "Nhận ra khi định giá thấp phản ánh sự suy yếu."),
+    event: text(
+      "NVA's P/E falls to 9×, but revenue contracts, free cash flow turns negative, debt rises, and management cuts guidance.",
+      "P/E của NVA giảm còn 9 lần, nhưng doanh thu thu hẹp, dòng tiền tự do chuyển âm, nợ tăng và ban lãnh đạo hạ dự báo.",
+    ),
+    question: text("Is the lower multiple a bargain or a warning?", "Định giá thấp hơn là món hời hay cảnh báo?"),
+    evidence: [
+      evidence("revenue-down", "Revenue and guidance are falling", "Doanh thu và dự báo đang giảm", 3),
+      evidence("fcf-negative", "Free cash flow turns negative", "Dòng tiền tự do chuyển âm", 3),
+      evidence("debt-up", "Debt rises while operating quality weakens", "Nợ tăng trong khi chất lượng hoạt động suy yếu", 2),
+      evidence("low-pe-buy", "Any P/E below 10 is automatically cheap", "Mọi P/E dưới 10 đều tự động là rẻ", 2, false),
+    ],
+    metrics: [
+      { label: text("P/E", "P/E"), value: "9×" },
+      { label: text("Revenue growth", "Tăng trưởng doanh thu"), value: "−8%" },
+      { label: text("Free cash flow", "Dòng tiền tự do"), value: "Negative / Âm" },
+      { label: text("Net debt / EBITDA", "Nợ ròng / EBITDA"), value: "3.6× ↑" },
+    ],
+    bars: makeBars([52, 50, 48, 46, 44, 43, 41, 40, 39, 37.5, 36, 34.8], [130, 137, 142, 149, 155, 151, 163, 170, 177, 181, 189, 198]),
+    future: { open: 34.2, high: 34.8, low: 29.6, close: 30.5, volume: 214 },
+    stopOptions: [29.0, 32.0, 33.5],
+    recommendedStop: 33.5,
+    actionScores: score({ wait: 100, sell: 100, reduce: 90, hold: 25, buy: 0, add: 0 }),
+    disciplineScores: score({ wait: 100, sell: 100, reduce: 92, hold: 20, buy: 0, add: 0 }),
+    lesson: text(
+      "A falling price can make P/E look cheap while the business deteriorates. Cash flow, debt, and revisions expose the trap.",
+      "Giá giảm có thể làm P/E trông rẻ trong khi doanh nghiệp suy yếu. Dòng tiền, nợ và điều chỉnh dự báo làm lộ bẫy.",
+    ),
+    outcome: text(
+      "NVA falls again after the guidance cut. Buying solely because P/E reached a single digit would be an impulsive loss.",
+      "NVA tiếp tục giảm sau khi hạ dự báo. Mua chỉ vì P/E xuống một chữ số sẽ là khoản lỗ do quyết định bốc đồng.",
+    ),
+    book: text("Chapter 2 — P/E limitations and value traps", "Chương 2 — Giới hạn P/E và bẫy giá trị"),
+    toolUnlock: "risk",
+  },
+  {
+    id: "risk-sizing",
+    campaignId: "risk",
+    stage: 10,
+    instrument: "SUM",
+    horizon: "daily",
+    title: text("Cross the Risk Gap", "Vượt Qua Khoảng Trống Rủi Ro"),
+    objective: text("Make position size follow the stop distance.", "Để quy mô vị thế phụ thuộc khoảng cách cắt lỗ."),
+    event: text(
+      "SUM offers a valid setup near 70. The logical invalidation is below 67.90, but an earnings event can still create a loss.",
+      "SUM tạo mẫu hình hợp lệ gần 70. Điểm vô hiệu hợp lý nằm dưới 67,90, nhưng sự kiện lợi nhuận vẫn có thể gây lỗ.",
+    ),
+    question: text("How much capital should this uncertain setup receive?", "Mẫu hình bất định này nên nhận bao nhiêu vốn?"),
+    evidence: [
+      evidence("defined-stop", "The invalidation level is known before entry", "Mức vô hiệu được biết trước khi vào lệnh", 3),
+      evidence("size-from-risk", "Shares should be derived from account risk", "Số cổ phiếu cần được suy ra từ rủi ro tài khoản", 3),
+      evidence("event-risk", "Earnings can still defeat a valid setup", "Kết quả kinh doanh vẫn có thể làm thất bại mẫu hình hợp lệ", 2),
+      evidence("conviction-size", "Strong conviction justifies risking 10% of the account", "Niềm tin mạnh biện minh cho việc mạo hiểm 10% tài khoản", 2, false),
+    ],
+    bars: makeBars([64, 65, 66, 66.5, 67, 67.8, 68.2, 68.8, 69, 69.4, 69.7, 70], [95, 99, 101, 104, 98, 102, 105, 109, 108, 112, 115, 119]),
+    future: { open: 70.0, high: 70.8, low: 66.7, close: 67.1, volume: 188 },
+    stopOptions: [65.0, 67.9, 69.4],
+    recommendedStop: 67.9,
+    autoStop: true,
+    actionScores: score({ buy: 100, wait: 88 }),
+    disciplineScores: score({ buy: 100, wait: 92 }),
+    lesson: text(
+      "A valid setup can lose. Risking 1% with a logical stop converts uncertainty into a survivable outcome.",
+      "Mẫu hình hợp lệ vẫn có thể thua. Mạo hiểm 1% với điểm cắt lỗ hợp lý biến bất định thành kết quả có thể sống sót.",
+    ),
+    outcome: text(
+      "SUM hits the planned stop. The trade loses, but disciplined sizing protects the campaign bankroll.",
+      "SUM chạm điểm cắt lỗ đã định. Giao dịch thua, nhưng quy mô kỷ luật bảo vệ vốn của chiến dịch.",
+    ),
+    book: text("Chapter 4 and SEPA Chapter 6 — Position sizing and survival", "Chương 4 và SEPA Chương 6 — Quy mô vị thế và khả năng tồn tại"),
+  },
+  {
+    id: "risk-rumor",
+    campaignId: "risk",
+    stage: 11,
+    instrument: "SUM",
+    horizon: "daily",
+    title: text("The Rumor Crowd", "Đám Đông Tin Đồn"),
+    objective: text("Separate popularity from verifiable evidence.", "Tách sự nổi tiếng khỏi bằng chứng có thể kiểm chứng."),
+    event: text(
+      "A viral post claims SUM will announce a major contract. No filing, company statement, or unusual volume confirms it.",
+      "Một bài đăng lan truyền tuyên bố SUM sắp công bố hợp đồng lớn. Không có hồ sơ, thông báo công ty hay khối lượng bất thường xác nhận.",
+    ),
+    question: text("What deserves weight before acting?", "Điều gì đáng được cân nhắc trước khi hành động?"),
+    evidence: [
+      evidence("no-source", "The claim has no primary source", "Tuyên bố không có nguồn sơ cấp", 3),
+      evidence("no-volume", "Market participation does not confirm the rumor", "Mức độ tham gia thị trường không xác nhận tin đồn", 2),
+      evidence("no-plan", "There is no defined setup or invalidation", "Không có mẫu hình hay điểm vô hiệu xác định", 3),
+      evidence("viral", "Thousands of reposts make the claim reliable", "Hàng nghìn lượt chia sẻ làm tin đồn đáng tin cậy", 2, false),
+    ],
+    bars: makeBars([67, 67.2, 67, 67.3, 67.5, 67.4, 67.7, 67.9, 68, 68.2, 68.4, 68.6], [92, 90, 88, 91, 89, 87, 90, 93, 91, 94, 96, 98]),
+    future: { open: 68.8, high: 73.5, low: 68.5, close: 72.9, volume: 176 },
+    stopOptions: [65.5, 67.2, 68.0],
+    recommendedStop: 67.2,
+    actionScores: score({ wait: 100, hold: 82, reduce: 88, sell: 75, buy: 10, add: 5 }),
+    disciplineScores: score({ wait: 100, hold: 85, reduce: 90, sell: 80, buy: 0, add: 0 }),
+    lesson: text(
+      "Popularity is not verification. Waiting is the disciplined choice when a claim has no source, confirmation, or risk plan.",
+      "Sự phổ biến không phải xác minh. Chờ đợi là lựa chọn kỷ luật khi tuyên bố không có nguồn, xác nhận hay kế hoạch rủi ro.",
+    ),
+    outcome: text(
+      "SUM rises sharply anyway. Chasing the unsupported rumor would be a profitable but low-quality decision.",
+      "SUM vẫn tăng mạnh. Mua đuổi theo tin đồn không được xác nhận sẽ là quyết định có lãi nhưng chất lượng thấp.",
+    ),
+    book: text("Chapter 5 — Rumors, crowds, FOMO, and emotional control", "Chương 5 — Tin đồn, đám đông, FOMO và kiểm soát cảm xúc"),
+  },
+  {
+    id: "risk-protect",
+    campaignId: "risk",
+    stage: 12,
+    instrument: "SUM",
+    horizon: "daily",
+    title: text("Protect the Bag", "Bảo Vệ Túi Vốn"),
+    objective: text("Combine market, business, trend, and risk evidence.", "Kết hợp bằng chứng thị trường, doanh nghiệp, xu hướng và rủi ro."),
+    event: text(
+      "SUM closes below MA20 on its heaviest volume in two months after management lowers guidance. The broader market also weakens.",
+      "SUM đóng cửa dưới MA20 với khối lượng lớn nhất hai tháng sau khi ban lãnh đạo hạ dự báo. Thị trường chung cũng suy yếu.",
+    ),
+    question: text("Which evidence changes the original thesis?", "Bằng chứng nào làm thay đổi luận điểm ban đầu?"),
+    evidence: [
+      evidence("guidance-cut", "Management lowers forward guidance", "Ban lãnh đạo hạ dự báo tương lai", 3),
+      evidence("ma20-volume", "Price breaks MA20 on exceptional volume", "Giá phá MA20 với khối lượng đặc biệt lớn", 3),
+      evidence("market-weak", "The broader market loses confirmation", "Thị trường chung mất xác nhận", 2),
+      evidence("old-high", "The old price high guarantees a rebound", "Đỉnh giá cũ bảo đảm một nhịp hồi", 2, false),
+    ],
+    metrics: [
+      { label: text("Guidance", "Dự báo"), value: "Lowered / Hạ" },
+      { label: text("Volume vs average", "Khối lượng so trung bình"), value: "2.3×" },
+      { label: text("MA20", "MA20"), value: "Broken / Bị phá" },
+      { label: text("Market trend", "Xu hướng thị trường"), value: "Weakening / Suy yếu" },
+    ],
+    bars: makeBars([73, 74, 75, 76.5, 77, 78, 77.5, 78.4, 79, 78.8, 77.6, 74.2], [103, 108, 111, 118, 122, 127, 114, 119, 121, 126, 144, 232]),
+    future: { open: 73.4, high: 74.0, low: 67.1, close: 68.0, volume: 246 },
+    stopOptions: [67.0, 72.8, 74.0],
+    recommendedStop: 72.8,
+    actionScores: score({ wait: 100, sell: 100, reduce: 90, hold: 20, buy: 0, add: 0 }),
+    disciplineScores: score({ wait: 100, sell: 100, reduce: 92, hold: 15, buy: 0, add: 0 }),
+    lesson: text(
+      "Business guidance, price structure, volume, and market context now agree that risk increased. Protecting capital is the complete decision.",
+      "Dự báo doanh nghiệp, cấu trúc giá, khối lượng và bối cảnh thị trường cùng cho thấy rủi ro tăng. Bảo vệ vốn là quyết định hoàn chỉnh.",
+    ),
+    outcome: text(
+      "SUM continues lower. The important result is that the exit followed evidence and a predefined invalidation.",
+      "SUM tiếp tục giảm. Kết quả quan trọng là việc thoát vị thế tuân theo bằng chứng và điểm vô hiệu xác định trước.",
+    ),
+    book: text("Chapters 4–5 and SEPA Chapter 7 — Exit discipline and review", "Chương 4–5 và SEPA Chương 7 — Kỷ luật thoát lệnh và đánh giá"),
+    toolUnlock: "journal",
+  },
+]);
+
+export function getCampaignScenarios(campaignId) {
+  return scenarios.filter((scenario) => scenario.campaignId === campaignId);
+}
+
+export function localize(value, lang) {
+  return value?.[lang] ?? value?.en ?? "";
+}

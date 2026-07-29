@@ -50,6 +50,12 @@ h1 { margin:12px 0 22px; font-family:var(--font-serif); font-size:clamp(42px,6vw
 .principles span,.strategy-grid span { color:var(--gold); font-family:var(--font-serif); }
 .principles h3 { font-family:var(--font-serif); font-size:22px; }
 .principles p { color:#59645e; line-height:1.6; }
+.journey-teaser { display:flex; align-items:center; justify-content:space-between; gap:38px; padding:54px 8vw; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:radial-gradient(circle at 86% 14%,rgba(198,147,75,.19),transparent 28%),var(--surface); }
+.journey-teaser>div { max-width:760px; }
+.journey-teaser h2 { margin:9px 0 12px; font-family:var(--font-serif); font-size:clamp(31px,4vw,50px); font-weight:450; line-height:1.1; }
+.journey-teaser>div>p:last-child { margin:0; color:var(--sage); font-size:17px; line-height:1.6; }
+.journey-teaser>a { flex:0 0 auto; display:inline-flex; min-height:50px; align-items:center; justify-content:center; border:1px solid var(--green); background:var(--green); color:var(--white); padding:13px 20px; text-decoration:none; }
+.game-route-loading { display:grid; min-height:520px; place-items:center; color:var(--sage); }
 .reader-shell { display:grid; grid-template-columns:minmax(260px,320px) minmax(0,840px); gap:clamp(32px,5vw,72px); align-items:start; max-width:1320px; margin:auto; padding:60px clamp(24px,5vw,72px) 100px; }
 .reader-shell aside { position:sticky; top:92px; max-height:calc(100vh - 112px); overflow-y:auto; scrollbar-width:thin; }
 .tree-toggle { display:none; }
@@ -434,4 +440,5 @@ footer span:last-child { text-align:right; }
   .strategy-map .map-plot { width:680px; min-width:680px; transform:none; }
   .strategy-map .map-x { padding-top:5px; }
 }
+@media (max-width:850px) { .journey-teaser { display:block; padding:42px 6vw; } .journey-teaser>a { width:100%; margin-top:24px; } }
 @media (prefers-reduced-motion:reduce) { .book-loader { animation:none; } }

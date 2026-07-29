@@ -15,13 +15,13 @@ export const metadata: Metadata = {
     title: "Stockbook — Kinh nghiệm đầu tư",
     description: "Cẩm nang song ngữ về đầu tư cổ phiếu có kỷ luật, quản trị rủi ro và ra quyết định.",
     url: "https://buicongnguyen.github.io/stockbook/vi/",
-    images: [{ url: "https://buicongnguyen.github.io/stockbook/og.png", alt: "Stockbook — Suy nghĩ rõ ràng trước khi mạo hiểm vốn." }],
+    images: [{ url: "https://buicongnguyen.github.io/stockbook/og-journey.png", alt: "Hành Trình Stockbook — Quy trình quan trọng hơn lợi nhuận." }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Stockbook — Kinh nghiệm đầu tư",
     description: "Cẩm nang song ngữ về đầu tư cổ phiếu có kỷ luật, quản trị rủi ro và ra quyết định.",
-    images: ["https://buicongnguyen.github.io/stockbook/og.png"],
+    images: ["https://buicongnguyen.github.io/stockbook/og-journey.png"],
   },
 };
 

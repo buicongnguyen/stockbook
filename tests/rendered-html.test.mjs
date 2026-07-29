@@ -44,6 +44,7 @@ test("server-renders the Stockbook home page", async () => {
   assert.match(html, /Think clearly before you risk capital/);
   assert.match(html, /Primary navigation/);
   assert.match(html, /<nav[^>]*>[\s\S]*?<a /i);
+  assert.match(html, /og-journey\.png/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview|SkeletonPreview/i);
 });
 
@@ -57,6 +58,7 @@ test("server-renders localized Vietnamese metadata and content", async () => {
 });
 
 test("route state is shareable and preserves unrelated query parameters", () => {
+  assert.equal(readRoute("?page=game&lang=vi").page, "game");
   assert.deepEqual(readRoute("?page=tools&lang=vi&chapter=99"), {
     page: "tools",
     lang: "vi",
@@ -120,9 +122,10 @@ test("calculators return values only for meaningful inputs", () => {
 });
 
 test("deployment and accessibility safeguards stay enabled", async () => {
-  const [page, css, workflow] = await Promise.all([
+  const [page, css, gameCss, workflow] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/game.module.css", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8"),
   ]);
 
@@ -131,5 +134,7 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(page, /aria-pressed=\{strategyIndex === index\}/);
   assert.match(css, /\.diagram-scroll\s*\{/);
   assert.match(css, /\.result\.invalid\s*\{/);
+  assert.match(gameCss, /prefers-reduced-motion/);
+  assert.match(page, /<StockJourneyGame lang=\{lang\}/);
   assert.match(workflow, /run:\s*npm test/);
 });
