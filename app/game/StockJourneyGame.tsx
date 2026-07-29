@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { actionCopy, campaigns, horizons, localize, scenarios, toolCopy } from "./game-data.js";
 import {
   advanceStage,
+  classifyCapitalChange,
   createInitialGameState,
   getPosition,
   getScenario,
@@ -16,6 +17,8 @@ import {
 } from "./game-logic.js";
 import { clearGameState, loadGameState, saveGameState } from "./game-storage.js";
 import GameChart from "./GameChart";
+import { DecisionChecklist, LessonReview, StageProgress } from "./GameLearningAids";
+import GameOutcomeFeedback from "./GameOutcomeFeedback";
 import GameScene from "./GameScene";
 import styles from "./game.module.css";
 import type { Campaign, GameState, Lang, LocalizedText, Metric, Scenario } from "./game-types";
@@ -42,6 +45,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
   const scenario = getScenario(state) as Scenario;
   const campaign = (campaigns.find((item) => item.id === scenario.campaignId) ?? campaigns[0]) as Campaign;
   const t = (value: LocalizedText) => localize(value, lang);
+  const numberLocale = lang === "en" ? "en-US" : "vi-VN";
   const currentPrice = scenario.bars.at(-1)?.close ?? scenario.future.close;
   const position = getPosition(state.portfolio, scenario.instrument);
   const markPrice = state.phase === "reveal" || state.phase === "debrief" ? scenario.future.close : currentPrice;
@@ -160,6 +164,9 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
   const resultDirection = lastResult
     ? lastResult.equity - lastResult.equityBefore
     : 0;
+  const capitalChange = lastResult
+    ? classifyCapitalChange(lastResult.equityBefore, lastResult.equity)
+    : "flat";
   const showVolume = state.unlockedTools.includes("volume") || scenario.stage >= 2;
   const showTrend = state.unlockedTools.includes("trend") && Boolean(scenario.ma);
 
@@ -181,7 +188,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
       </header>
 
       <div className={styles.hud} aria-label={lang === "en" ? "Journey status" : "Trạng thái hành trình"}>
-        <article><span>{lang === "en" ? "Capital bag" : "Túi vốn"}</span><strong>{equity.toLocaleString(lang === "en" ? "en-US" : "vi-VN", { maximumFractionDigits: 0 })}</strong><small>{lang === "en" ? `${state.portfolio.cash.toFixed(0)} cash` : `${state.portfolio.cash.toFixed(0)} tiền mặt`}</small></article>
+        <article><span>{lang === "en" ? "Capital bag" : "Túi vốn"}</span><strong>{equity.toLocaleString(numberLocale, { maximumFractionDigits: 0 })}</strong><small>{lang === "en" ? `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} cash` : `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} tiền mặt`}</small></article>
         <article><span>{lang === "en" ? "Position" : "Vị thế"}</span><strong>{position.shares} {scenario.instrument}</strong><small>{position.shares ? `${lang === "en" ? "Avg" : "TB"} ${position.avgCost.toFixed(2)}` : (lang === "en" ? "No exposure" : "Không có vị thế")}</small></article>
         <article><span>{lang === "en" ? "Decision journal" : "Nhật ký quyết định"}</span><strong>{averageMastery}/100</strong><small>{lang === "en" ? `${state.completed.length}/12 stages` : `${state.completed.length}/12 chặng`}</small></article>
         <article><span>{lang === "en" ? "Current region" : "Khu vực hiện tại"}</span><strong>{t(campaign.name)}</strong><small>{campaignCompleted}/3</small></article>
@@ -201,6 +208,8 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
           ><span>{done ? "✓" : item.number}</span><b>{t(item.name)}</b></button>;
         })}
       </nav>
+
+      {state.phase !== "map" && state.phase !== "completed" && <StageProgress phase={state.phase} lang={lang}/>}
 
       <div ref={phaseSurfaceRef} tabIndex={-1} className={styles.phaseSurface}>
       {state.phase === "map" && <section className={styles.mapPanel}>
@@ -231,6 +240,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
 
       {state.phase === "briefing" && <section className={styles.briefing}>
         <GameScene campaign={campaign} scenario={scenario} lang={lang} traveling={false} reducedMotion={state.reducedMotion} equity={equity}/>
+        <LessonReview scenario={scenario} lang={lang}/>
         <div className={styles.briefCard}>
           <span>{lang === "en" ? `Stage ${scenario.stage} objective` : `Mục tiêu chặng ${scenario.stage}`}</span>
           <h2>{t(scenario.title)}</h2>
@@ -255,6 +265,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
           <div><span>{lang === "en" ? `Stage ${scenario.stage}` : `Chặng ${scenario.stage}`}</span><h2>{t(scenario.title)}</h2><p>{t(scenario.objective)}</p></div>
           <aside><b>{lang === "en" ? "Information cutoff" : "Mốc thông tin"}</b><span>{lang === "en" ? "Through the latest visible close" : "Đến giá đóng cửa gần nhất được hiển thị"}</span></aside>
         </header>
+        <LessonReview scenario={scenario} lang={lang}/>
         <article className={styles.eventCard}><span>{lang === "en" ? "Market event" : "Sự kiện thị trường"}</span><p>{t(scenario.event)}</p></article>
         <GameChart scenario={scenario} lang={lang} reveal={false} showVolume={showVolume} showTrend={showTrend}/>
         {scenario.metrics && <div className={styles.metricsGrid}>{scenario.metrics.map((metric: Metric) => <article key={t(metric.label)}><span>{t(metric.label)}</span><strong>{metric.value}</strong></article>)}</div>}
@@ -282,6 +293,14 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
               <div><p>{lang === "en" ? "Account risk" : "Rủi ro tài khoản"}</p><div className={styles.choiceRow}>{riskChoices.map((value) => <button key={value} className={riskPct === value ? styles.selectedButton : ""} aria-pressed={riskPct === value} onClick={() => setRiskPct(value)}>{value}%</button>)}</div></div>
               <div><p>{lang === "en" ? "Invalidation / stop" : "Điểm vô hiệu / cắt lỗ"}</p><div className={styles.choiceRow}>{scenario.stopOptions.map((value: number) => <button key={value} className={stopPrice === value ? styles.selectedButton : ""} aria-pressed={stopPrice === value} onClick={() => setStopPrice(value)}>{value.toFixed(2)}</button>)}</div></div>
             </fieldset>}
+            <DecisionChecklist
+              evidenceDone={evidenceIds.length > 0}
+              horizonDone={Boolean(horizon)}
+              actionDone={Boolean(action)}
+              riskRequired={needsRiskInput}
+              riskDone={!needsRiskInput || (riskPct !== null && stopPrice !== null)}
+              lang={lang}
+            />
             <button className={styles.commitButton} disabled={!canCommit} onClick={commitDecision}>{lang === "en" ? "Commit decision" : "Xác nhận quyết định"}</button>
             <p className={styles.commitNote}>{lang === "en" ? "Profit will not change the decision-quality score." : "Lợi nhuận sẽ không thay đổi điểm chất lượng quyết định."}</p>
           </div>
@@ -290,13 +309,18 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
 
       {state.phase === "reveal" && lastResult && <section className={styles.revealPanel}>
         <p className={styles.eyebrow}>{lang === "en" ? "The market answers" : "Thị trường trả lời"}</p>
-        <h2>{resultDirection >= 0 ? (lang === "en" ? "Capital increased this stage." : "Vốn tăng trong chặng này.") : (lang === "en" ? "Capital decreased this stage." : "Vốn giảm trong chặng này.")}</h2>
+        <h2>{capitalChange === "gain"
+          ? (lang === "en" ? "Capital increased this stage." : "Vốn tăng trong chặng này.")
+          : capitalChange === "loss"
+            ? (lang === "en" ? "Capital decreased this stage." : "Vốn giảm trong chặng này.")
+            : (lang === "en" ? "Capital held steady this stage." : "Vốn được giữ ổn định trong chặng này.")}</h2>
         <p>{t(scenario.outcome)}</p>
+        <GameOutcomeFeedback result={lastResult} lang={lang}/>
         <GameChart scenario={scenario} lang={lang} reveal showVolume={showVolume} showTrend={showTrend}/>
         <div className={styles.outcomeStrip}>
           <article><span>{lang === "en" ? "Action" : "Hành động"}</span><strong>{t(actionCopy[lastResult.action as keyof typeof actionCopy])}</strong></article>
           <article><span>{lang === "en" ? "Shares traded" : "Số cổ phiếu giao dịch"}</span><strong>{lastResult.sharesTraded}</strong></article>
-          <article><span>{lang === "en" ? "Stage equity change" : "Thay đổi vốn chặng"}</span><strong className={resultDirection >= 0 ? styles.positive : styles.negative}>{resultDirection >= 0 ? "+" : ""}{resultDirection.toFixed(2)}</strong></article>
+          <article><span>{lang === "en" ? "Stage equity change" : "Thay đổi vốn chặng"}</span><strong className={capitalChange === "gain" ? styles.positive : capitalChange === "loss" ? styles.negative : styles.neutral}>{capitalChange === "gain" ? "+" : ""}{resultDirection.toFixed(2)}</strong></article>
           <article><span>{lang === "en" ? "Protective stop" : "Cắt lỗ bảo vệ"}</span><strong>{lastResult.stopped ? (lang === "en" ? "Triggered" : "Đã kích hoạt") : "—"}</strong></article>
         </div>
         <button className={styles.primaryButton} onClick={() => setPhase("debrief")}>{lang === "en" ? "Open the Decision Journal" : "Mở Nhật Ký Quyết Định"} →</button>
@@ -319,9 +343,10 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
             return <article key={key}><div><span>{labels[key]?.[lang] ?? key}</span><strong>{String(value)}</strong></div><i><b style={{ width: `${value}%` }}/></i></article>;
           })}
         </div>
+        <GameOutcomeFeedback result={lastResult} lang={lang} compact/>
         <div className={styles.lessonGrid}>
           <article><span>{lang === "en" ? "What the stage teaches" : "Bài học của chặng"}</span><p>{t(scenario.lesson)}</p></article>
-          <article><span>{lang === "en" ? "Book connection" : "Liên kết với sách"}</span><p>{t(scenario.book)}</p><a href={`?page=book&chapter=${scenario.campaignId === "risk" ? 4 : scenario.campaignId === "trend" ? 4 : 2}`}>{lang === "en" ? "Read the related chapter" : "Đọc chương liên quan"} →</a></article>
+          <article><span>{lang === "en" ? "Book connection" : "Liên kết với sách"}</span><p>{t(scenario.book)}</p><a href={`?page=book&chapter=${scenario.review.bookChapter}&lang=${lang}`}>{lang === "en" ? "Read the related chapter" : "Đọc chương liên quan"} →</a></article>
         </div>
         {scenario.toolUnlock && <article className={styles.unlockCard}>
           <span>{lang === "en" ? "Tool unlocked" : "Công cụ đã mở khóa"}</span>
@@ -339,7 +364,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
         <p>{lang === "en"
           ? `You completed ${state.completed.length} stages with an average best decision score of ${averageMastery}. Replay a region to strengthen a weak skill without erasing mastery.`
           : `Bạn đã hoàn thành ${state.completed.length} chặng với điểm quyết định tốt nhất trung bình ${averageMastery}. Hãy chơi lại một khu vực để củng cố kỹ năng yếu mà không xóa năng lực đã đạt.`}</p>
-        <div className={styles.completedActions}><button className={styles.primaryButton} onClick={() => setPhase("map")}>{lang === "en" ? "Replay a region" : "Chơi lại khu vực"}</button><a href="?page=framework">{lang === "en" ? "Review the buying framework" : "Xem lại quy trình mua cổ phiếu"} →</a></div>
+        <div className={styles.completedActions}><button className={styles.primaryButton} onClick={() => setPhase("map")}>{lang === "en" ? "Replay a region" : "Chơi lại khu vực"}</button><a href={`?page=framework&lang=${lang}`}>{lang === "en" ? "Review the buying framework" : "Xem lại quy trình mua cổ phiếu"} →</a></div>
       </section>}
       </div>
 

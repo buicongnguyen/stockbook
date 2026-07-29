@@ -3,6 +3,14 @@ const text = (en, vi) => Object.freeze({ en, vi });
 const evidence = (id, en, vi, weight = 1, relevant = true) =>
   Object.freeze({ id, label: text(en, vi), weight, relevant });
 
+const review = (conceptEn, conceptVi, rememberEn, rememberVi, trapEn, trapVi, bookChapter) =>
+  Object.freeze({
+    concept: text(conceptEn, conceptVi),
+    remember: Object.freeze(rememberEn.map((item, index) => text(item, rememberVi[index]))),
+    trap: text(trapEn, trapVi),
+    bookChapter,
+  });
+
 function makeBars(closes, volumes) {
   return closes.map((close, index) => {
     const open = index === 0 ? close * 0.992 : closes[index - 1];
@@ -138,6 +146,23 @@ export const scenarios = Object.freeze([
       "Which evidence matters before risking capital?",
       "Bằng chứng nào quan trọng trước khi mạo hiểm vốn?",
     ),
+    review: review(
+      "A candle summarizes the open, high, low, and close; its meaning comes from context.",
+      "Một cây nến tóm tắt giá mở cửa, cao nhất, thấp nhất và đóng cửa; ý nghĩa của nó đến từ bối cảnh.",
+      [
+        "A long wick shows that price failed to hold an extreme.",
+        "Where the candle closes matters more than its color alone.",
+        "Confirm a candle with trend, price level, volume, or another bar.",
+      ],
+      [
+        "Bóng nến dài cho thấy giá không giữ được một mức cực trị.",
+        "Vị trí đóng cửa quan trọng hơn màu nến khi đứng riêng lẻ.",
+        "Hãy xác nhận cây nến bằng xu hướng, vùng giá, khối lượng hoặc nến tiếp theo.",
+      ],
+      "Treating any green candle as an automatic buy signal.",
+      "Xem mọi cây nến xanh là tín hiệu mua tự động.",
+      2,
+    ),
     evidence: [
       evidence("upper-wick", "Sellers rejected the intraday high", "Bên bán từ chối mức giá cao trong phiên", 2),
       evidence("weak-close", "The close is well below the high", "Giá đóng cửa thấp hơn nhiều so với đỉnh", 2),
@@ -174,6 +199,23 @@ export const scenarios = Object.freeze([
       "AUR quay lại vùng 97–99, nơi người mua từng xuất hiện. Cây nến mới nhất đóng cửa trở lại phía trên vùng này.",
     ),
     question: text("Is the response at support strong enough for a controlled plan?", "Phản ứng tại hỗ trợ có đủ mạnh cho một kế hoạch được kiểm soát không?"),
+    review: review(
+      "Support is a zone where demand appeared before, not a price that is guaranteed to hold.",
+      "Hỗ trợ là vùng mà lực cầu từng xuất hiện, không phải một mức giá chắc chắn sẽ giữ được.",
+      [
+        "Look for several reactions in the same area.",
+        "A reclaim or strong response is more useful than a simple touch.",
+        "Define invalidation below the zone before entering.",
+      ],
+      [
+        "Tìm nhiều phản ứng trong cùng một vùng.",
+        "Việc lấy lại vùng giá hoặc phản ứng mạnh hữu ích hơn một lần chạm đơn thuần.",
+        "Xác định điểm vô hiệu bên dưới vùng trước khi vào lệnh.",
+      ],
+      "Drawing one exact line and assuming price cannot cross it.",
+      "Vẽ một đường giá chính xác rồi cho rằng giá không thể xuyên qua.",
+      2,
+    ),
     evidence: [
       evidence("zone", "Several reactions cluster between 97 and 99", "Nhiều phản ứng tập trung trong vùng 97 đến 99", 3),
       evidence("reclaim", "Price closes back above the support zone", "Giá đóng cửa trở lại phía trên vùng hỗ trợ", 2),
@@ -209,6 +251,23 @@ export const scenarios = Object.freeze([
       "AUR đóng cửa trên 106 sau sáu tuần nằm dưới kháng cự. Khối lượng tăng gần gấp đôi mức trung bình gần đây.",
     ),
     question: text("Which clues make this breakout more credible?", "Dấu hiệu nào làm cú bứt phá này đáng tin hơn?"),
+    review: review(
+      "A breakout is more credible when price acceptance and market participation confirm each other.",
+      "Cú bứt phá đáng tin hơn khi sự chấp nhận mức giá mới và mức độ tham gia của thị trường xác nhận lẫn nhau.",
+      [
+        "Prefer a close above resistance, not only an intraday spike.",
+        "Expanding volume shows that more participants support the move.",
+        "Plan an invalidation point in case the breakout fails.",
+      ],
+      [
+        "Ưu tiên phiên đóng cửa trên kháng cự, không chỉ một nhịp xuyên qua trong ngày.",
+        "Khối lượng tăng cho thấy có nhiều người tham gia ủng hộ biến động.",
+        "Lập sẵn điểm vô hiệu phòng khi cú bứt phá thất bại.",
+      ],
+      "Assuming that crossing a line is sufficient confirmation.",
+      "Cho rằng chỉ cần vượt qua một đường giá là đã đủ xác nhận.",
+      2,
+    ),
     evidence: [
       evidence("close-above", "Price closes decisively above resistance", "Giá đóng cửa dứt khoát phía trên kháng cự", 3),
       evidence("volume", "Volume expands well above its baseline", "Khối lượng tăng mạnh so với mức nền", 3),
@@ -245,6 +304,23 @@ export const scenarios = Object.freeze([
       "BRG vẫn nằm trên MA50 và MA200 đang tăng. Một nhịp điều chỉnh yên ắng tiến gần MA20 đang đi lên.",
     ),
     question: text("Does this look like normal digestion or trend failure?", "Đây giống tích lũy bình thường hay thất bại xu hướng?"),
+    review: review(
+      "A rising MA20 can organize a healthy pullback, but price structure must confirm the trend.",
+      "MA20 đi lên có thể định hướng một nhịp điều chỉnh lành mạnh, nhưng cấu trúc giá phải xác nhận xu hướng.",
+      [
+        "Check whether MA20 is rising rather than merely present.",
+        "Look for higher highs, higher lows, and an orderly pullback.",
+        "Know which close or price structure would invalidate the trend.",
+      ],
+      [
+        "Kiểm tra MA20 có đang đi lên hay chỉ đơn thuần xuất hiện.",
+        "Tìm các đỉnh cao hơn, đáy cao hơn và nhịp điều chỉnh có trật tự.",
+        "Biết mức đóng cửa hoặc cấu trúc giá nào sẽ làm xu hướng mất hiệu lực.",
+      ],
+      "Buying every touch of a moving average without reading structure.",
+      "Mua ở mọi lần chạm đường trung bình mà không đọc cấu trúc giá.",
+      4,
+    ),
     evidence: [
       evidence("rising-ma", "MA20, MA50, and MA200 slope upward", "MA20, MA50 và MA200 đều dốc lên", 3),
       evidence("quiet-volume", "Pullback volume contracts", "Khối lượng trong nhịp điều chỉnh thu hẹp", 2),
@@ -282,6 +358,23 @@ export const scenarios = Object.freeze([
       "BRG hồi lên trên MA20, nhưng MA50 đang giảm và giá vẫn nằm dưới MA200 dốc xuống.",
     ),
     question: text("Which timeframe controls the larger risk?", "Khung thời gian nào chi phối rủi ro lớn hơn?"),
+    review: review(
+      "Moving-average order and slope help distinguish a short rally from a healthy long-term regime.",
+      "Thứ tự và độ dốc của các đường trung bình giúp phân biệt nhịp hồi ngắn với trạng thái dài hạn lành mạnh.",
+      [
+        "Compare price with MA20, MA50, and MA200 together.",
+        "A rally below declining long averages may remain countertrend.",
+        "Match the evidence to the timeframe of the decision.",
+      ],
+      [
+        "So sánh giá đồng thời với MA20, MA50 và MA200.",
+        "Nhịp tăng dưới các đường trung bình dài hạn đang giảm có thể vẫn là hồi ngược xu hướng.",
+        "Ghép bằng chứng với đúng khung thời gian của quyết định.",
+      ],
+      "Letting a short-term rally erase the larger trend from the analysis.",
+      "Để một nhịp hồi ngắn hạn xóa mất xu hướng lớn khỏi phân tích.",
+      4,
+    ),
     evidence: [
       evidence("below-ma200", "Price remains below a falling MA200", "Giá vẫn nằm dưới MA200 đang giảm", 3),
       evidence("falling-ma50", "MA50 continues to slope downward", "MA50 tiếp tục dốc xuống", 2),
@@ -319,6 +412,23 @@ export const scenarios = Object.freeze([
       "BRG vượt kháng cự trong thời gian ngắn, sau đó đóng cửa trở lại trong nền giá với khối lượng tăng.",
     ),
     question: text("What changed after the failed close?", "Điều gì đã thay đổi sau phiên đóng cửa thất bại?"),
+    review: review(
+      "A failed breakout matters when price loses the level that justified the trade.",
+      "Cú bứt phá thất bại trở nên quan trọng khi giá mất mức đã làm cơ sở cho giao dịch.",
+      [
+        "Compare the close with the former breakout level.",
+        "Rising sell volume can strengthen the failure signal.",
+        "Act on the predefined invalidation instead of rewriting the thesis.",
+      ],
+      [
+        "So sánh giá đóng cửa với mức bứt phá trước đó.",
+        "Khối lượng bán tăng có thể củng cố tín hiệu thất bại.",
+        "Hành động theo điểm vô hiệu đã định thay vì viết lại luận điểm.",
+      ],
+      "Holding only because the original breakout once looked convincing.",
+      "Tiếp tục nắm giữ chỉ vì cú bứt phá ban đầu từng có vẻ thuyết phục.",
+      4,
+    ),
     evidence: [
       evidence("failed-close", "Price closes back below the breakout level", "Giá đóng cửa trở lại dưới mức bứt phá", 3),
       evidence("heavy-volume", "Selling volume expands", "Khối lượng bán tăng", 3),
@@ -357,6 +467,23 @@ export const scenarios = Object.freeze([
       "NVA giao dịch ở mức P/E 17 lần. Các doanh nghiệp phần mềm cùng ngành giao dịch từ 20 đến 27 lần với biên lợi nhuận tương tự.",
     ),
     question: text("Which comparisons are meaningful?", "So sánh nào có ý nghĩa?"),
+    review: review(
+      "P/E becomes useful only when the comparison includes a relevant peer group and business quality.",
+      "P/E chỉ trở nên hữu ích khi so sánh trong nhóm doanh nghiệp phù hợp và có xét chất lượng kinh doanh.",
+      [
+        "Compare companies with similar economics and industry structure.",
+        "Put valuation beside growth, margins, debt, and cash generation.",
+        "Ask why the market may assign a discount or premium.",
+      ],
+      [
+        "So sánh các doanh nghiệp có đặc điểm kinh tế và cấu trúc ngành tương đồng.",
+        "Đặt định giá cạnh tăng trưởng, biên lợi nhuận, nợ và khả năng tạo tiền.",
+        "Hỏi vì sao thị trường có thể áp dụng mức chiết khấu hoặc phần bù.",
+      ],
+      "Calling a stock cheap only because its P/E is lower than an unrelated company.",
+      "Gọi một cổ phiếu là rẻ chỉ vì P/E thấp hơn một doanh nghiệp không cùng nhóm.",
+      2,
+    ),
     evidence: [
       evidence("same-sector", "Compare NVA with software peers", "So sánh NVA với doanh nghiệp phần mềm cùng ngành", 3),
       evidence("growth", "Check whether earnings growth is comparable", "Kiểm tra tăng trưởng lợi nhuận có tương đồng hay không", 2),
@@ -395,6 +522,23 @@ export const scenarios = Object.freeze([
       "P/E của NVA tăng lên 28 lần trong khi tăng trưởng lợi nhuận kỳ vọng gần 25%. Chất lượng doanh thu và dòng tiền tự do đang cải thiện.",
     ),
     question: text("Does the higher P/E automatically make NVA uninvestable?", "P/E cao hơn có tự động khiến NVA không thể đầu tư không?"),
+    review: review(
+      "Growth can justify part of a valuation premium only when it is durable and converts into economic value.",
+      "Tăng trưởng chỉ có thể biện minh cho một phần mức định giá cao khi bền vững và chuyển thành giá trị kinh tế.",
+      [
+        "Compare valuation with expected and realized growth.",
+        "Check whether growth produces margins, cash flow, and returns on capital.",
+        "Treat PEG as a shortcut for questions, not a final answer.",
+      ],
+      [
+        "So sánh định giá với tăng trưởng kỳ vọng và tăng trưởng thực tế.",
+        "Kiểm tra tăng trưởng có tạo ra biên lợi nhuận, dòng tiền và lợi suất vốn hay không.",
+        "Xem PEG là lối tắt để đặt câu hỏi, không phải câu trả lời cuối cùng.",
+      ],
+      "Assuming that fast growth makes every purchase price reasonable.",
+      "Cho rằng tăng trưởng nhanh khiến mọi mức giá mua đều hợp lý.",
+      2,
+    ),
     evidence: [
       evidence("peg-context", "P/E should be considered beside growth", "P/E cần được xem xét cùng tăng trưởng", 3),
       evidence("cash-quality", "Free cash flow supports earnings quality", "Dòng tiền tự do hỗ trợ chất lượng lợi nhuận", 2),
@@ -433,6 +577,23 @@ export const scenarios = Object.freeze([
       "P/E của NVA giảm còn 9 lần, nhưng doanh thu thu hẹp, dòng tiền tự do chuyển âm, nợ tăng và ban lãnh đạo hạ dự báo.",
     ),
     question: text("Is the lower multiple a bargain or a warning?", "Định giá thấp hơn là món hời hay cảnh báo?"),
+    review: review(
+      "A low multiple can reflect deteriorating economics rather than hidden value.",
+      "Bội số thấp có thể phản ánh nền tảng kinh doanh suy yếu thay vì giá trị bị bỏ quên.",
+      [
+        "Check the direction and quality of earnings, not only the current P/E.",
+        "Review debt, free cash flow, margins, and competitive position.",
+        "Require a plausible reason that deterioration can stop or reverse.",
+      ],
+      [
+        "Kiểm tra xu hướng và chất lượng lợi nhuận, không chỉ P/E hiện tại.",
+        "Xem xét nợ, dòng tiền tự do, biên lợi nhuận và vị thế cạnh tranh.",
+        "Đòi hỏi một lý do hợp lý cho thấy sự suy yếu có thể dừng lại hoặc đảo chiều.",
+      ],
+      "Treating a falling share price and low P/E as proof of a bargain.",
+      "Xem giá cổ phiếu giảm và P/E thấp là bằng chứng chắc chắn của món hời.",
+      2,
+    ),
     evidence: [
       evidence("revenue-down", "Revenue and guidance are falling", "Doanh thu và dự báo đang giảm", 3),
       evidence("fcf-negative", "Free cash flow turns negative", "Dòng tiền tự do chuyển âm", 3),
@@ -475,6 +636,23 @@ export const scenarios = Object.freeze([
       "SUM tạo mẫu hình hợp lệ gần 70. Điểm vô hiệu hợp lý nằm dưới 67,90, nhưng sự kiện lợi nhuận vẫn có thể gây lỗ.",
     ),
     question: text("How much capital should this uncertain setup receive?", "Mẫu hình bất định này nên nhận bao nhiêu vốn?"),
+    review: review(
+      "Position size should follow the amount the account may lose and the distance to invalidation.",
+      "Quy mô vị thế phải phụ thuộc số tiền tài khoản được phép mất và khoảng cách đến điểm vô hiệu.",
+      [
+        "Choose account risk before calculating shares.",
+        "Position size equals risk budget divided by risk per share.",
+        "A wider logical stop requires fewer shares, not more risk.",
+      ],
+      [
+        "Chọn mức rủi ro tài khoản trước khi tính số cổ phiếu.",
+        "Quy mô vị thế bằng ngân sách rủi ro chia cho rủi ro trên mỗi cổ phiếu.",
+        "Điểm dừng hợp lý xa hơn đòi hỏi ít cổ phiếu hơn, không phải nhiều rủi ro hơn.",
+      ],
+      "Buying a fixed number of shares regardless of the stop distance.",
+      "Mua một số lượng cổ phiếu cố định bất kể khoảng cách cắt lỗ.",
+      4,
+    ),
     evidence: [
       evidence("defined-stop", "The invalidation level is known before entry", "Mức vô hiệu được biết trước khi vào lệnh", 3),
       evidence("size-from-risk", "Shares should be derived from account risk", "Số cổ phiếu cần được suy ra từ rủi ro tài khoản", 3),
@@ -511,6 +689,23 @@ export const scenarios = Object.freeze([
       "Một bài đăng lan truyền tuyên bố SUM sắp công bố hợp đồng lớn. Không có hồ sơ, thông báo công ty hay khối lượng bất thường xác nhận.",
     ),
     question: text("What deserves weight before acting?", "Điều gì đáng được cân nhắc trước khi hành động?"),
+    review: review(
+      "Popularity is not evidence; a decision needs a verifiable source and a defined risk.",
+      "Sự nổi tiếng không phải bằng chứng; quyết định cần nguồn có thể kiểm chứng và mức rủi ro xác định.",
+      [
+        "Separate a source, a claim, and confirmed facts.",
+        "Price and volume show behavior but do not verify a rumor.",
+        "Avoid urgency created only by fear of missing out.",
+      ],
+      [
+        "Tách biệt nguồn tin, lời khẳng định và dữ kiện đã xác nhận.",
+        "Giá và khối lượng cho thấy hành vi nhưng không xác minh tin đồn.",
+        "Tránh cảm giác khẩn cấp chỉ do sợ bỏ lỡ cơ hội.",
+      ],
+      "Assuming that a larger crowd makes an unverified story true.",
+      "Cho rằng đám đông lớn hơn sẽ biến một câu chuyện chưa kiểm chứng thành sự thật.",
+      5,
+    ),
     evidence: [
       evidence("no-source", "The claim has no primary source", "Tuyên bố không có nguồn sơ cấp", 3),
       evidence("no-volume", "Market participation does not confirm the rumor", "Mức độ tham gia thị trường không xác nhận tin đồn", 2),
@@ -546,6 +741,23 @@ export const scenarios = Object.freeze([
       "SUM đóng cửa dưới MA20 với khối lượng lớn nhất hai tháng sau khi ban lãnh đạo hạ dự báo. Thị trường chung cũng suy yếu.",
     ),
     question: text("Which evidence changes the original thesis?", "Bằng chứng nào làm thay đổi luận điểm ban đầu?"),
+    review: review(
+      "A complete decision combines market, business, trend, and risk evidence before protecting capital.",
+      "Một quyết định hoàn chỉnh kết hợp bằng chứng thị trường, doanh nghiệp, xu hướng và rủi ro trước khi bảo vệ vốn.",
+      [
+        "Restate the original thesis and its invalidation conditions.",
+        "Give more weight to changed facts than to the purchase price.",
+        "Judge the exit by process quality, not by what price does afterward.",
+      ],
+      [
+        "Nhắc lại luận điểm ban đầu và các điều kiện làm nó mất hiệu lực.",
+        "Đặt trọng số lớn hơn cho dữ kiện đã thay đổi so với giá mua.",
+        "Đánh giá quyết định thoát theo chất lượng quy trình, không theo diễn biến giá sau đó.",
+      ],
+      "Averaging down only to avoid admitting that the thesis changed.",
+      "Mua bình quân giá xuống chỉ để tránh thừa nhận luận điểm đã thay đổi.",
+      4,
+    ),
     evidence: [
       evidence("guidance-cut", "Management lowers forward guidance", "Ban lãnh đạo hạ dự báo tương lai", 3),
       evidence("ma20-volume", "Price breaks MA20 on exceptional volume", "Giá phá MA20 với khối lượng đặc biệt lớn", 3),

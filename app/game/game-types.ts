@@ -30,6 +30,13 @@ export type MovingAverages = {
   ma200: number[];
 };
 
+export type ReviewGuide = {
+  concept: LocalizedText;
+  remember: LocalizedText[];
+  trap: LocalizedText;
+  bookChapter: number;
+};
+
 export type Scenario = {
   id: string;
   campaignId: string;
@@ -40,6 +47,7 @@ export type Scenario = {
   objective: LocalizedText;
   event: LocalizedText;
   question: LocalizedText;
+  review: ReviewGuide;
   evidence: Evidence[];
   bars: Bar[];
   future: Bar;

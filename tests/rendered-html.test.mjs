@@ -122,10 +122,12 @@ test("calculators return values only for meaningful inputs", () => {
 });
 
 test("deployment and accessibility safeguards stay enabled", async () => {
-  const [page, css, gameCss, workflow] = await Promise.all([
+  const [page, css, gameCss, learningAids, outcomeFeedback, workflow] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/game.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/GameLearningAids.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/GameOutcomeFeedback.tsx", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8"),
   ]);
 
@@ -135,6 +137,10 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(css, /\.diagram-scroll\s*\{/);
   assert.match(css, /\.result\.invalid\s*\{/);
   assert.match(gameCss, /prefers-reduced-motion/);
+  assert.match(gameCss, /grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(learningAids, /<details className=\{styles\.lessonReview\}>/);
+  assert.match(learningAids, /aria-current=\{index === current \? "step"/);
+  assert.match(outcomeFeedback, /Process × outcome/);
   assert.match(page, /<StockJourneyGame lang=\{lang\}/);
   assert.match(workflow, /run:\s*npm test/);
 });

@@ -4,6 +4,8 @@ import { campaigns, scenarios } from "../app/game/game-data.js";
 import {
   advanceStage,
   calculateDecisionScore,
+  classifyCapitalChange,
+  classifyProcessOutcome,
   createInitialGameState,
   createPortfolio,
   getPosition,
@@ -31,6 +33,26 @@ test("all bilingual game content is structurally valid", () => {
   assert.equal(campaigns.length, 4);
   assert.equal(scenarios.length, 12);
   assert.deepEqual(validateGameContent(), []);
+  assert.ok(scenarios.every((scenario) =>
+    scenario.review.remember.length === 3
+    && scenario.review.remember.every((item) => item.en && item.vi)
+  ));
+});
+
+test("capital and process outcomes remain independent", () => {
+  assert.equal(classifyCapitalChange(10000, 10000), "flat");
+  assert.equal(classifyCapitalChange(10000, 10000.01), "gain");
+  assert.equal(classifyCapitalChange(10000, 9999.99), "loss");
+  assert.deepEqual(classifyProcessOutcome(92, 10000, 9900), {
+    process: "strong",
+    market: "loss",
+    key: "strong-loss",
+  });
+  assert.deepEqual(classifyProcessOutcome(52, 10000, 10100), {
+    process: "weak",
+    market: "gain",
+    key: "weak-gain",
+  });
 });
 
 test("valid actions follow the current position", () => {

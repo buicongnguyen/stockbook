@@ -3,9 +3,22 @@ import { campaigns, horizons, scenarios } from "./game-data.js";
 export const GAME_STORAGE_VERSION = 1;
 export const GAME_STORAGE_KEY = "stockbook-journey-v1";
 export const riskChoices = Object.freeze([0.5, 1, 3]);
+export const STRONG_PROCESS_SCORE = 75;
 
 const roundMoney = (value) => Number(value.toFixed(2));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export function classifyCapitalChange(equityBefore, equityAfter, tolerance = 0.005) {
+  const change = equityAfter - equityBefore;
+  if (Math.abs(change) < tolerance) return "flat";
+  return change > 0 ? "gain" : "loss";
+}
+
+export function classifyProcessOutcome(scoreTotal, equityBefore, equityAfter) {
+  const process = scoreTotal >= STRONG_PROCESS_SCORE ? "strong" : "weak";
+  const market = classifyCapitalChange(equityBefore, equityAfter);
+  return { process, market, key: `${process}-${market}` };
+}
 
 export function createPortfolio(campaignId) {
   const campaign = campaigns.find((item) => item.id === campaignId) ?? campaigns[0];
@@ -311,6 +324,16 @@ export function validateGameContent() {
     if (!campaigns.some((campaign) => campaign.id === scenario.campaignId)) errors.push(`Unknown campaign: ${scenario.id}`);
     if (!horizons.some((horizon) => horizon.id === scenario.horizon)) errors.push(`Unknown horizon: ${scenario.id}`);
     if (!scenario.title.en || !scenario.title.vi || !scenario.lesson.en || !scenario.lesson.vi) errors.push(`Missing translation: ${scenario.id}`);
+    if (
+      !scenario.review?.concept?.en
+      || !scenario.review?.concept?.vi
+      || !scenario.review?.trap?.en
+      || !scenario.review?.trap?.vi
+      || !Number.isInteger(scenario.review?.bookChapter)
+      || scenario.review.bookChapter < 1
+      || scenario.review.remember?.length !== 3
+      || scenario.review.remember.some((item) => !item.en || !item.vi)
+    ) errors.push(`Missing or invalid review guide: ${scenario.id}`);
     if (!scenario.evidence.some((item) => item.relevant)) errors.push(`No relevant evidence: ${scenario.id}`);
     for (const item of scenario.evidence) {
       if (!item.label.en || !item.label.vi) errors.push(`Missing evidence translation: ${scenario.id}:${item.id}`);

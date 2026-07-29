@@ -103,7 +103,9 @@ export default function GameChart({
           </g>}
         </svg>
       </div>
-      <figcaption>{summary} {lang === "en" ? "Future candles remain hidden until the decision is committed." : "Nến tương lai được ẩn cho đến khi quyết định được xác nhận."}</figcaption>
+      <figcaption>{summary} {reveal
+        ? (lang === "en" ? "The outcome candle is now revealed." : "Nến kết quả hiện đã được mở.")
+        : (lang === "en" ? "Future candles remain hidden until the decision is committed." : "Nến tương lai được ẩn cho đến khi quyết định được xác nhận.")}</figcaption>
     </figure>
   );
 }
