@@ -140,6 +140,9 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(gameCss, /grid-template-columns:minmax\(0,1fr\)/);
   assert.match(learningAids, /<details className=\{styles\.lessonReview\}>/);
   assert.match(learningAids, /aria-current=\{index === current \? "step"/);
+  assert.match(learningAids, /scenario\.practice\.map/);
+  assert.match(learningAids, /aria-pressed=\{chosen\}/);
+  assert.match(learningAids, /role="status"/);
   assert.match(outcomeFeedback, /Process × outcome/);
   assert.match(page, /<StockJourneyGame lang=\{lang\}/);
   assert.match(workflow, /run:\s*npm test/);

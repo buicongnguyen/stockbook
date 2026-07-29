@@ -3,11 +3,18 @@
   --game-gold:#c9913f;
   --game-red:#a84e43;
   --game-blue:#426b9e;
+  --practice-correct:#267b5f;
+  --practice-wrong:#a84e43;
   width:min(1440px,100%);
   min-width:0;
   max-width:100%;
   margin:0 auto;
   padding:58px clamp(18px,5vw,76px) 90px;
+}
+
+:global(:root[data-theme="dark"]) .root {
+  --practice-correct:#88c2a4;
+  --practice-wrong:#dda47f;
 }
 
 .gameHeader {
@@ -547,6 +554,72 @@
   background:color-mix(in srgb,var(--game-red) 8%,var(--paper));
 }
 .reviewBody .trapCard p { font-size:15px; }
+.practiceSection {
+  grid-column:1/-1;
+  padding:22px;
+  background:var(--surface);
+}
+.practiceSection>header {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:16px;
+}
+.practiceSection>header span {
+  color:var(--gold);
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.practiceSection>header h3 { margin:5px 0 0; font-family:var(--font-serif); font-size:24px; font-weight:550; }
+.practiceSection>header>b { color:var(--sage); font-size:10px; text-transform:uppercase; }
+.practiceGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.reviewBody .practiceCard {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  padding:20px;
+  border:1px solid var(--line);
+  background:var(--paper);
+}
+.practiceCard>span { color:var(--gold); font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+.practiceCard h4 { margin:8px 0 15px; font-family:var(--font-serif); font-size:17px; font-weight:600; line-height:1.45; }
+.practiceCard>div { display:grid; gap:7px; }
+.practiceCard button {
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  min-height:44px;
+  border:1px solid var(--line);
+  background:var(--surface);
+  padding:10px 11px;
+  color:var(--ink);
+  text-align:left;
+  cursor:pointer;
+}
+.practiceCard button:hover,.practiceCard button:focus-visible { border-color:var(--gold); }
+.practiceCard button:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+.practiceCard button i {
+  display:grid;
+  flex:0 0 20px;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border:1px solid currentColor;
+  border-radius:50%;
+  font-size:10px;
+  font-style:normal;
+}
+.practiceCard button span { font-size:14px; line-height:1.45; }
+.practiceCard .practiceSelected { border-color:var(--gold); }
+.practiceCard .practiceCorrect { border-color:var(--practice-correct); background:color-mix(in srgb,var(--practice-correct) 10%,var(--surface)); color:var(--practice-correct); }
+.practiceCard .practiceIncorrect { border-color:var(--practice-wrong); background:color-mix(in srgb,var(--practice-wrong) 9%,var(--surface)); color:var(--practice-wrong); }
+.practiceFeedback { margin:14px 0 0!important; padding-top:13px; border-top:1px solid var(--line); font-family:Arial,sans-serif!important; font-size:14px!important; line-height:1.55!important; }
+.practiceFeedback strong { color:var(--ink); }
+.correctFeedback { color:var(--practice-correct); }
+.retryFeedback { color:var(--practice-wrong); }
 .reviewBody footer {
   grid-column:1/-1;
   display:flex;
@@ -940,7 +1013,9 @@
   .travelControls { display:block; }
   .travelControls button { width:100%; margin-top:12px; }
   .reviewBody { grid-template-columns:1fr; }
-  .reviewBody .trapCard,.reviewBody footer { grid-column:1; }
+  .reviewBody .trapCard,.practiceSection,.reviewBody footer { grid-column:1; }
+  .practiceSection>header { align-items:flex-start; flex-direction:column; }
+  .practiceGrid { grid-template-columns:1fr; }
   .reviewBody footer { align-items:flex-start; flex-direction:column; }
   .stageHeader { display:block; padding:22px 18px; }
   .stageHeader aside { margin-top:17px; }

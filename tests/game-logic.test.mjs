@@ -33,6 +33,19 @@ test("all bilingual game content is structurally valid", () => {
   assert.equal(campaigns.length, 4);
   assert.equal(scenarios.length, 12);
   assert.deepEqual(validateGameContent(), []);
+  const practiceDrills = scenarios.flatMap((scenario) => scenario.practice);
+  assert.equal(practiceDrills.length, 24);
+  assert.equal(new Set(practiceDrills.map((drill) => drill.id)).size, 24);
+  assert.ok(scenarios.every((scenario) => scenario.practice.length === 2));
+  assert.ok(practiceDrills.every((drill) =>
+    drill.prompt.en
+    && drill.prompt.vi
+    && drill.explanation.en
+    && drill.explanation.vi
+    && drill.options.length === 3
+    && drill.options.filter((option) => option.correct).length === 1
+    && drill.options.every((option) => option.label.en && option.label.vi)
+  ));
   assert.ok(scenarios.every((scenario) =>
     scenario.review.remember.length === 3
     && scenario.review.remember.every((item) => item.en && item.vi)

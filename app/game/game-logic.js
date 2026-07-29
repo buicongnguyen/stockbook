@@ -318,6 +318,7 @@ export function isCampaignUnlocked(state, campaignId) {
 export function validateGameContent() {
   const errors = [];
   const ids = new Set();
+  const practiceIds = new Set();
   for (const scenario of scenarios) {
     if (ids.has(scenario.id)) errors.push(`Duplicate scenario id: ${scenario.id}`);
     ids.add(scenario.id);
@@ -334,6 +335,32 @@ export function validateGameContent() {
       || scenario.review.remember?.length !== 3
       || scenario.review.remember.some((item) => !item.en || !item.vi)
     ) errors.push(`Missing or invalid review guide: ${scenario.id}`);
+    if (!Array.isArray(scenario.practice) || scenario.practice.length < 2) {
+      errors.push(`Insufficient practice drills: ${scenario.id}`);
+    } else {
+      for (const drill of scenario.practice) {
+        if (!drill?.id || practiceIds.has(drill.id)) errors.push(`Missing or duplicate practice drill: ${scenario.id}:${drill?.id ?? "unknown"}`);
+        if (drill?.id) practiceIds.add(drill.id);
+        const options = Array.isArray(drill?.options) ? drill.options : [];
+        const optionIds = new Set();
+        const hasDuplicateOption = options.some((item) => {
+          if (!item?.id || optionIds.has(item.id)) return true;
+          optionIds.add(item.id);
+          return false;
+        });
+        const correctCount = options.filter((item) => item.correct).length;
+        if (
+          !drill?.prompt?.en
+          || !drill?.prompt?.vi
+          || !drill?.explanation?.en
+          || !drill?.explanation?.vi
+          || options.length < 2
+          || correctCount !== 1
+          || hasDuplicateOption
+          || options.some((item) => !item?.label?.en || !item?.label?.vi)
+        ) errors.push(`Invalid practice drill: ${scenario.id}:${drill?.id ?? "unknown"}`);
+      }
+    }
     if (!scenario.evidence.some((item) => item.relevant)) errors.push(`No relevant evidence: ${scenario.id}`);
     for (const item of scenario.evidence) {
       if (!item.label.en || !item.label.vi) errors.push(`Missing evidence translation: ${scenario.id}:${item.id}`);

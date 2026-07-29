@@ -37,6 +37,19 @@ export type ReviewGuide = {
   bookChapter: number;
 };
 
+export type PracticeOption = {
+  id: string;
+  label: LocalizedText;
+  correct: boolean;
+};
+
+export type PracticeDrill = {
+  id: string;
+  prompt: LocalizedText;
+  options: PracticeOption[];
+  explanation: LocalizedText;
+};
+
 export type Scenario = {
   id: string;
   campaignId: string;
@@ -48,6 +61,7 @@ export type Scenario = {
   event: LocalizedText;
   question: LocalizedText;
   review: ReviewGuide;
+  practice: PracticeDrill[];
   evidence: Evidence[];
   bars: Bar[];
   future: Bar;
