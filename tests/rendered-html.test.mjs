@@ -122,10 +122,11 @@ test("calculators return values only for meaningful inputs", () => {
 });
 
 test("deployment and accessibility safeguards stay enabled", async () => {
-  const [page, css, gameCss, learningAids, outcomeFeedback, workflow] = await Promise.all([
+  const [page, css, gameCss, game, learningAids, outcomeFeedback, workflow] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/game.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/StockJourneyGame.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameLearningAids.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameOutcomeFeedback.tsx", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8"),
@@ -138,6 +139,11 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(css, /\.result\.invalid\s*\{/);
   assert.match(gameCss, /prefers-reduced-motion/);
   assert.match(gameCss, /grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(gameCss, /\.heroPanel\s*\{/);
+  assert.match(gameCss, /@media \(max-width:580px\)/);
+  assert.match(game, /"--journey-progress"/);
+  assert.match(game, /className=\{styles\.progressDial\}/);
+  assert.match(game, /className=\{styles\.campaignStatus\}/);
   assert.match(learningAids, /<details className=\{styles\.lessonReview\}>/);
   assert.match(learningAids, /aria-current=\{index === current \? "step"/);
   assert.match(learningAids, /scenario\.practice\.map/);

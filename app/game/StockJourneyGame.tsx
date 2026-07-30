@@ -175,23 +175,51 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
   }
 
   return (
-    <section className={styles.root}>
+    <section
+      className={styles.root}
+      style={{
+        "--campaign-accent": campaign.accent,
+        "--journey-progress": `${state.completed.length / 12 * 100}%`,
+      } as React.CSSProperties}
+    >
       <header className={styles.gameHeader}>
-        <div>
+        <span className={styles.heroGlow} aria-hidden="true"/>
+        <div className={styles.headerCopy}>
           <p className={styles.eyebrow}>{lang === "en" ? "Interactive decision training" : "Huấn luyện quyết định tương tác"}</p>
           <h1>{lang === "en" ? "Stockbook Journey" : "Hành Trình Stockbook"}</h1>
           <p>{lang === "en"
             ? "Protect capital, collect evidence, and learn from uncertain outcomes."
             : "Bảo vệ vốn, thu thập bằng chứng và học từ những kết quả bất định."}</p>
+          <div className={styles.heroChips} aria-label={lang === "en" ? "Journey format" : "Cấu trúc hành trình"}>
+            <span>{lang === "en" ? "12 market missions" : "12 nhiệm vụ thị trường"}</span>
+            <span>{lang === "en" ? "4 skill regions" : "4 khu vực kỹ năng"}</span>
+            <span>{lang === "en" ? "Process-scored" : "Chấm điểm quy trình"}</span>
+          </div>
         </div>
-        <button className={styles.resetButton} onClick={resetJourney}>{lang === "en" ? "Reset journey" : "Đặt lại hành trình"}</button>
+        <aside className={styles.heroPanel}>
+          <div
+            className={styles.progressDial}
+            role="img"
+            aria-label={lang === "en"
+              ? `${state.completed.length} of 12 stages completed`
+              : `Đã hoàn thành ${state.completed.length} trong 12 chặng`}
+          >
+            <div><strong>{state.completed.length}</strong><span>/12</span></div>
+          </div>
+          <div className={styles.heroScore}>
+            <span>{lang === "en" ? "Journey mastery" : "Mức thành thạo"}</span>
+            <strong>{averageMastery}</strong>
+            <small>{lang === "en" ? "Best-process average" : "Điểm quy trình tốt nhất"}</small>
+          </div>
+          <button className={styles.resetButton} onClick={resetJourney}>{lang === "en" ? "Reset" : "Đặt lại"}</button>
+        </aside>
       </header>
 
       <div className={styles.hud} aria-label={lang === "en" ? "Journey status" : "Trạng thái hành trình"}>
-        <article><span>{lang === "en" ? "Capital bag" : "Túi vốn"}</span><strong>{equity.toLocaleString(numberLocale, { maximumFractionDigits: 0 })}</strong><small>{lang === "en" ? `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} cash` : `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} tiền mặt`}</small></article>
-        <article><span>{lang === "en" ? "Position" : "Vị thế"}</span><strong>{position.shares} {scenario.instrument}</strong><small>{position.shares ? `${lang === "en" ? "Avg" : "TB"} ${position.avgCost.toFixed(2)}` : (lang === "en" ? "No exposure" : "Không có vị thế")}</small></article>
-        <article><span>{lang === "en" ? "Decision journal" : "Nhật ký quyết định"}</span><strong>{averageMastery}/100</strong><small>{lang === "en" ? `${state.completed.length}/12 stages` : `${state.completed.length}/12 chặng`}</small></article>
-        <article><span>{lang === "en" ? "Current region" : "Khu vực hiện tại"}</span><strong>{t(campaign.name)}</strong><small>{campaignCompleted}/3</small></article>
+        <article><i aria-hidden="true">$</i><div><span>{lang === "en" ? "Capital bag" : "Túi vốn"}</span><strong>{equity.toLocaleString(numberLocale, { maximumFractionDigits: 0 })}</strong><small>{lang === "en" ? `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} cash` : `${state.portfolio.cash.toLocaleString(numberLocale, { maximumFractionDigits: 0 })} tiền mặt`}</small></div></article>
+        <article><i aria-hidden="true">↗</i><div><span>{lang === "en" ? "Position" : "Vị thế"}</span><strong>{position.shares} {scenario.instrument}</strong><small>{position.shares ? `${lang === "en" ? "Avg" : "TB"} ${position.avgCost.toFixed(2)}` : (lang === "en" ? "No exposure" : "Không có vị thế")}</small></div></article>
+        <article><i aria-hidden="true">✓</i><div><span>{lang === "en" ? "Decision journal" : "Nhật ký quyết định"}</span><strong>{averageMastery}/100</strong><small>{lang === "en" ? `${state.completed.length}/12 stages` : `${state.completed.length}/12 chặng`}</small></div></article>
+        <article><i aria-hidden="true">⌖</i><div><span>{lang === "en" ? "Current region" : "Khu vực hiện tại"}</span><strong>{t(campaign.name)}</strong><small>{campaignCompleted}/3</small></div></article>
       </div>
 
       <nav className={styles.progressRail} aria-label={lang === "en" ? "Campaign progress" : "Tiến trình chiến dịch"}>
@@ -201,6 +229,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
           const canSwitchCampaign = state.phase === "map" || state.phase === "completed";
           return <button
             key={item.id}
+            style={{ "--campaign-accent": item.accent } as React.CSSProperties}
             className={`${item.id === state.campaignId ? styles.currentCampaign : ""} ${done ? styles.doneCampaign : ""}`}
             disabled={!unlocked || !canSwitchCampaign}
             onClick={() => beginCampaign(item.id)}
@@ -224,12 +253,22 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
           {campaigns.map((item, index) => {
             const unlocked = campaignUnlocked(index);
             const completedCount = scenarios.filter((scenarioItem) => scenarioItem.campaignId === item.id && state.completed.includes(scenarioItem.id)).length;
-            return <article key={item.id} style={{ "--campaign-accent": item.accent } as React.CSSProperties}>
+            return <article
+              key={item.id}
+              className={!unlocked ? styles.lockedCampaignCard : completedCount === 3 ? styles.completedCampaignCard : ""}
+              style={{ "--campaign-accent": item.accent } as React.CSSProperties}
+            >
               <span className={styles.campaignNumber}>{String(item.number).padStart(2, "0")}</span>
               <p>{t(item.kicker)}</p>
               <h3>{t(item.name)}</h3>
               <p>{t(item.description)}</p>
               <div className={styles.campaignMeter}><i style={{ width: `${completedCount / 3 * 100}%` }}/></div>
+              <div className={styles.campaignStatus}>
+                <b>{completedCount}/3</b>
+                <span>{!unlocked
+                  ? (lang === "en" ? "Locked" : "Đã khóa")
+                  : (lang === "en" ? "missions cleared" : "nhiệm vụ hoàn thành")}</span>
+              </div>
               <button disabled={!unlocked} onClick={() => beginCampaign(item.id)}>
                 {!unlocked ? (lang === "en" ? "Complete prior region" : "Hoàn thành khu vực trước") : completedCount === 3 ? (lang === "en" ? "Replay region" : "Chơi lại khu vực") : (lang === "en" ? "Enter region" : "Vào khu vực")}
               </button>
