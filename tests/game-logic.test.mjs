@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { campaigns, scenarios } from "../app/game/game-data.js";
 import {
+  actionProbabilityReview,
   advanceStage,
   calculateDecisionScore,
   classifyCapitalChange,
@@ -73,6 +74,41 @@ test("valid actions follow the current position", () => {
   assert.deepEqual(validActions(portfolio, "AUR"), ["buy", "wait"]);
   portfolio.positions.AUR = { shares: 10, avgCost: 100 };
   assert.deepEqual(validActions(portfolio, "AUR"), ["add", "hold", "reduce", "sell"]);
+});
+
+test("post-decision choice probabilities are ranked, normalized, and context-aware", () => {
+  const decisiveEntry = scenarios.find((item) => item.id === "signal-candle");
+  const entryReview = actionProbabilityReview(decisiveEntry, "wait");
+  assert.deepEqual(entryReview.map((item) => item.action), ["wait", "buy"]);
+  assert.equal(entryReview.reduce((sum, item) => sum + item.probability, 0), 100);
+  assert.ok(entryReview[0].probability > entryReview[1].probability);
+
+  const positionScenario = scenarios.find((item) => item.id === "trend-false-break");
+  const positionReview = actionProbabilityReview(positionScenario, "sell");
+  assert.equal(positionReview[0].action, "sell");
+  assert.deepEqual(
+    new Set(positionReview.map((item) => item.action)),
+    new Set(["add", "hold", "reduce", "sell"]),
+  );
+  assert.equal(positionReview.reduce((sum, item) => sum + item.probability, 0), 100);
+  assert.ok(positionReview.every((item, index) =>
+    item.probability >= 1
+    && item.probability <= 100
+    && (index === 0 || positionReview[index - 1].probability >= item.probability)
+  ));
+
+  const ambiguousEntry = scenarios.find((item) => item.id === "signal-support");
+  const ambiguousReview = actionProbabilityReview(ambiguousEntry, "wait");
+  assert.ok(Math.abs(ambiguousReview[0].probability - ambiguousReview[1].probability) <= 5);
+  assert.deepEqual(actionProbabilityReview(decisiveEntry, "invalid-action"), []);
+
+  for (const scenario of scenarios) {
+    for (const committedAction of ["wait", "hold"]) {
+      const review = actionProbabilityReview(scenario, committedAction);
+      assert.equal(review.reduce((sum, item) => sum + item.probability, 0), 100, scenario.id);
+      assert.ok(review.every((item) => item.probability >= 1), scenario.id);
+    }
+  }
 });
 
 test("a controlled buy cannot exceed cash or risk budget", () => {

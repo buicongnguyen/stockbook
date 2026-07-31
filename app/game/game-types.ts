@@ -101,6 +101,13 @@ export type Score = {
   dimensions: Record<string, number>;
 };
 
+export type ActionProbability = {
+  action: Action;
+  optionIndex: number;
+  probability: number;
+  quality: number;
+};
+
 export type LastResult = {
   scenarioId: string;
   action: Action;

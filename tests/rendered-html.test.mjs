@@ -122,13 +122,14 @@ test("calculators return values only for meaningful inputs", () => {
 });
 
 test("deployment and accessibility safeguards stay enabled", async () => {
-  const [page, css, gameCss, game, learningAids, outcomeFeedback, workflow] = await Promise.all([
+  const [page, css, gameCss, game, learningAids, outcomeFeedback, probabilityReview, workflow] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/game.module.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/StockJourneyGame.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameLearningAids.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameOutcomeFeedback.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/GameProbabilityReview.tsx", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8"),
   ]);
 
@@ -150,6 +151,11 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(learningAids, /aria-pressed=\{chosen\}/);
   assert.match(learningAids, /role="status"/);
   assert.match(outcomeFeedback, /Process × outcome/);
+  assert.match(game, /<GameProbabilityReview/);
+  assert.match(probabilityReview, /Highest-probability choice/);
+  assert.match(probabilityReview, /Your choice/);
+  assert.match(probabilityReview, /not a market forecast or guarantee/);
+  assert.match(probabilityReview, /actionProbabilityReview/);
   assert.match(page, /<StockJourneyGame lang=\{lang\}/);
   assert.match(workflow, /run:\s*npm test/);
 });

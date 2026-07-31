@@ -19,6 +19,7 @@ import { clearGameState, loadGameState, saveGameState } from "./game-storage.js"
 import GameChart from "./GameChart";
 import { DecisionChecklist, LessonReview, StageProgress } from "./GameLearningAids";
 import GameOutcomeFeedback from "./GameOutcomeFeedback";
+import GameProbabilityReview from "./GameProbabilityReview";
 import GameScene from "./GameScene";
 import styles from "./game.module.css";
 import type { Campaign, GameState, Lang, LocalizedText, Metric, Scenario } from "./game-types";
@@ -355,6 +356,7 @@ export default function StockJourneyGame({ lang }: { lang: Lang }) {
             : (lang === "en" ? "Capital held steady this stage." : "Vốn được giữ ổn định trong chặng này.")}</h2>
         <p>{t(scenario.outcome)}</p>
         <GameOutcomeFeedback result={lastResult} lang={lang}/>
+        <GameProbabilityReview scenario={scenario} chosenAction={lastResult.action} lang={lang}/>
         <GameChart scenario={scenario} lang={lang} reveal showVolume={showVolume} showTrend={showTrend}/>
         <div className={styles.outcomeStrip}>
           <article><span>{lang === "en" ? "Action" : "Hành động"}</span><strong>{t(actionCopy[lastResult.action as keyof typeof actionCopy])}</strong></article>

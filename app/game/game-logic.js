@@ -76,6 +76,55 @@ export function validActions(portfolio, instrument) {
   return position.shares > 0 ? ["add", "hold", "reduce", "sell"] : ["buy", "wait"];
 }
 
+const ENTRY_ACTIONS = Object.freeze(["buy", "wait"]);
+const POSITION_ACTIONS = Object.freeze(["add", "hold", "reduce", "sell"]);
+
+export function actionProbabilityReview(scenario, committedAction) {
+  const availableActions = ENTRY_ACTIONS.includes(committedAction)
+    ? ENTRY_ACTIONS
+    : POSITION_ACTIONS.includes(committedAction)
+      ? POSITION_ACTIONS
+      : [];
+  if (availableActions.length === 0) return [];
+
+  const weighted = availableActions.map((action, optionIndex) => {
+    const actionScore = scenario.actionScores[action] ?? 0;
+    const disciplineScore = scenario.disciplineScores[action] ?? actionScore;
+    const quality = actionScore * 0.7 + disciplineScore * 0.3;
+    return {
+      action,
+      optionIndex,
+      quality,
+      weight: Math.max(10, quality) ** 2,
+    };
+  });
+  const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+  const distributablePercentage = 100 - weighted.length;
+  const unrounded = weighted.map((item) => {
+    const exactProbability = 1 + item.weight / totalWeight * distributablePercentage;
+    const probability = Math.floor(exactProbability);
+    return { ...item, probability, remainder: exactProbability - probability };
+  });
+
+  let percentagePointsLeft = 100 - unrounded.reduce((sum, item) => sum + item.probability, 0);
+  const roundingOrder = [...unrounded].sort(
+    (left, right) => right.remainder - left.remainder || left.optionIndex - right.optionIndex,
+  );
+  for (let index = 0; index < roundingOrder.length && percentagePointsLeft > 0; index += 1) {
+    roundingOrder[index].probability += 1;
+    percentagePointsLeft -= 1;
+  }
+
+  return unrounded
+    .map(({ action, optionIndex, probability, quality }) => ({
+      action,
+      optionIndex,
+      probability,
+      quality: Math.round(quality),
+    }))
+    .sort((left, right) => right.probability - left.probability || left.optionIndex - right.optionIndex);
+}
+
 export function portfolioEquity(portfolio, marks = {}) {
   const positionsValue = Object.entries(portfolio.positions).reduce(
     (sum, [symbol, position]) => sum + position.shares * (marks[symbol] ?? position.avgCost),
