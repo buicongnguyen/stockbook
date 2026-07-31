@@ -122,11 +122,12 @@ test("calculators return values only for meaningful inputs", () => {
 });
 
 test("deployment and accessibility safeguards stay enabled", async () => {
-  const [page, css, gameCss, game, learningAids, outcomeFeedback, probabilityReview, workflow] = await Promise.all([
+  const [page, css, gameCss, game, gameChart, learningAids, outcomeFeedback, probabilityReview, workflow] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/game.module.css", import.meta.url), "utf8"),
     readFile(new URL("../app/game/StockJourneyGame.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/game/GameChart.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameLearningAids.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameOutcomeFeedback.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/game/GameProbabilityReview.tsx", import.meta.url), "utf8"),
@@ -142,6 +143,12 @@ test("deployment and accessibility safeguards stay enabled", async () => {
   assert.match(gameCss, /grid-template-columns:minmax\(0,1fr\)/);
   assert.match(gameCss, /\.heroPanel\s*\{/);
   assert.match(gameCss, /@media \(max-width:580px\)/);
+  assert.match(gameCss, /Compact density/);
+  assert.match(gameCss, /min-height:190px/);
+  assert.match(gameCss, /\.hud article \{ min-height:70px/);
+  assert.match(gameCss, /\.scene \{ height:clamp\(220px,27vw,320px\)/);
+  assert.match(gameCss, /\.probabilitySeal \{ display:none/);
+  assert.match(gameChart, /const height = 280/);
   assert.match(game, /"--journey-progress"/);
   assert.match(game, /className=\{styles\.progressDial\}/);
   assert.match(game, /className=\{styles\.campaignStatus\}/);

@@ -22,13 +22,13 @@ export default function GameChart({
 }) {
   const bars = reveal ? [...scenario.bars, scenario.future] : scenario.bars;
   const width = 760;
-  const height = 330;
+  const height = 280;
   const left = 48;
   const right = 22;
   const top = 24;
-  const priceBottom = showVolume ? 238 : 284;
-  const volumeTop = 254;
-  const volumeBottom = 306;
+  const priceBottom = showVolume ? 196 : 238;
+  const volumeTop = 212;
+  const volumeBottom = 258;
   const trendValues = showTrend && scenario.ma
     ? Object.values(scenario.ma).flatMap((values) => values as number[])
     : [];

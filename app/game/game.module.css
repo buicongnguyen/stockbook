@@ -1616,3 +1616,158 @@
     transition:none!important;
   }
 }
+
+/* Compact density: keep more of each decision screen visible without sacrificing touch targets. */
+.root { padding-top:20px; padding-bottom:52px; }
+.gameHeader {
+  min-height:190px;
+  padding:clamp(22px,3vw,34px);
+}
+.gameHeader h1 { font-size:clamp(42px,5vw,66px); }
+.gameHeader .headerCopy>p:last-of-type { font-size:clamp(15px,1.3vw,18px); line-height:1.4; }
+.heroChips { gap:6px; margin-top:14px; }
+.heroChips span { padding:5px 9px; }
+.heroPanel { gap:11px 14px; padding:14px; }
+.progressDial { width:80px; height:80px; }
+.progressDial strong { font-size:29px; }
+
+.hud { gap:7px; }
+.hud article { min-height:70px; gap:10px; padding:10px 13px; }
+.hud article>i { flex-basis:33px; width:33px; height:33px; border-radius:10px; font-size:16px; }
+.hud strong { font-size:19px; }
+.hud small { font-size:10px; }
+.progressRail { margin:8px 0 16px; padding:4px; }
+.progressRail button { min-height:46px; padding-block:5px; }
+.progressRail button span { flex-basis:25px; width:25px; height:25px; }
+.stageProgress { margin:-2px 0 14px; padding:8px 12px; }
+.stageProgress::before { top:21px; }
+.stageProgress li { gap:4px; }
+.stageProgress li span { width:27px; height:27px; }
+.stageProgress li b { font-size:9px; }
+
+.briefing,.travelPanel,.analysis { gap:14px; }
+.briefCard { padding:20px 24px; }
+.mapPanel,.revealPanel,.debrief,.completedPanel { padding:clamp(22px,3vw,40px); }
+.mapIntro { margin-bottom:22px; }
+.mapIntro h2,.briefCard h2,.stageHeader h2,.revealPanel h2,.debrief h2,.completedPanel h2 {
+  margin-block:5px 9px;
+  font-size:clamp(29px,3.4vw,43px);
+}
+.mapIntro>p:last-child,.briefCard p,.stageHeader p,.revealPanel>p,.completedPanel>p {
+  font-size:15px;
+  line-height:1.48;
+}
+.campaignGrid article { min-height:260px; padding:19px; }
+.campaignGrid h3 { margin-block:6px 9px; font-size:25px; }
+.campaignMeter { margin:15px 0 10px; }
+
+.scene { height:clamp(220px,27vw,320px); }
+.analysis>.scene { height:clamp(145px,14vw,185px); }
+.travelControls { padding:12px 16px; }
+.lessonReview summary { min-height:54px; padding:9px 16px; }
+.lessonReview summary b { font-size:17px; }
+.reviewBody article { padding:15px 17px; }
+.reviewBody article p { margin-top:6px; font-size:16px; line-height:1.45; }
+.reviewBody li { margin:4px 0; line-height:1.4; }
+.reviewBody .trapCard { padding-block:12px; }
+.practiceSection { padding:16px 17px; }
+.practiceSection>header { margin-bottom:10px; }
+.reviewBody .practiceCard { padding:14px; }
+.practiceCard h4 { margin:6px 0 10px; line-height:1.35; }
+.practiceCard button { padding-block:8px; }
+.practiceFeedback { margin-top:10px!important; padding-top:10px; }
+.reviewBody footer { padding:10px 15px; }
+
+.stageHeader { gap:18px; padding:18px 22px; }
+.stageHeader h2 { margin:4px 0 6px; font-size:clamp(29px,3.4vw,42px); }
+.stageHeader aside { padding:10px 12px; }
+.eventCard { gap:15px; padding:14px 18px; }
+.eventCard p { font-size:17px; line-height:1.42; }
+.chartFigure { padding:13px; }
+.chartToolbar { margin-bottom:7px; }
+.chartFigure figcaption { margin-top:7px; line-height:1.4; }
+.metricsGrid article { padding:13px 15px; }
+.metricsGrid strong { margin-top:5px; font-size:20px; }
+.decisionGrid { gap:11px; }
+.evidencePanel,.planPanel { padding:18px; }
+.evidencePanel>p { margin:5px 0 11px; }
+.evidencePanel label { margin-top:6px; padding:10px 11px; }
+.planPanel { gap:13px; }
+.planPanel fieldset { padding:12px; }
+.choiceRow,.actionRow { margin-top:9px; }
+.commitButton { min-height:48px; }
+.commitNote { margin-top:-7px; }
+.decisionChecklist { padding:10px 13px; }
+
+.processOutcomeCard { gap:16px; margin:16px 0; padding:18px; }
+.processOutcomeCard h3 { font-size:27px; }
+.probabilityReview { margin:16px 0; padding:18px; }
+.probabilityHeader { gap:16px; }
+.probabilityHeader h3 { font-size:clamp(23px,2.6vw,30px); }
+.probabilitySeal { min-width:82px; padding:15px 12px; font-size:34px; }
+.probabilityList { gap:6px; margin:15px 0 12px; }
+.probabilityList li { padding:9px 11px; }
+.probabilityTrack { margin-top:6px; }
+.probabilityNote { padding-top:10px; }
+.revealPanel .chartFigure { margin:18px 0 13px; }
+.outcomeStrip { margin:13px 0 19px; }
+.outcomeStrip article { padding:12px; }
+.scoreSeal { width:88px; height:88px; }
+.scoreSeal strong { font-size:34px; }
+.scoreGrid { margin:18px 0; }
+.scoreGrid article { padding:11px; }
+.lessonGrid article { padding:18px; }
+.unlockCard { margin:12px 0; padding:18px 21px; }
+.achievementRow { margin:13px 0; }
+.completedMark { width:68px; height:68px; margin-bottom:12px; font-size:31px; }
+.completedActions { margin-top:19px; }
+.liveMessage { margin-top:8px; }
+.gameDisclaimer { margin-top:18px; padding-top:13px; }
+
+@media (max-width:820px) {
+  .root { padding-top:16px; padding-bottom:46px; }
+  .gameHeader { min-height:0; gap:18px; padding:22px; }
+  .heroPanel { padding:11px 13px; }
+  .hud article { min-height:66px; }
+  .progressRail { margin-bottom:14px; }
+  .campaignGrid article { min-height:235px; }
+}
+
+@media (max-width:580px) {
+  .root { padding:10px 10px 38px; }
+  .gameHeader { gap:13px; padding:18px 16px; }
+  .gameHeader h1 { font-size:clamp(36px,11vw,46px); }
+  .gameHeader .headerCopy>p:last-of-type { font-size:14px; line-height:1.38; }
+  .heroChips { gap:5px; margin-top:10px; }
+  .heroChips span { padding-block:4px; }
+  .heroPanel { padding:10px; }
+  .progressDial { width:62px; height:62px; }
+  .progressDial strong { font-size:22px; }
+  .hud { gap:5px; }
+  .hud article { min-height:60px; padding:8px; }
+  .hud article>i { flex-basis:28px; width:28px; height:28px; }
+  .hud strong { font-size:16px; }
+  .progressRail { margin-block:7px 11px; }
+  .progressRail button { flex-basis:160px; }
+  .stageProgress { margin-bottom:10px; padding-block:6px; }
+  .mapPanel,.revealPanel,.debrief,.completedPanel { padding:19px 15px; }
+  .campaignGrid article { min-height:220px; padding:17px; }
+  .scene { height:220px; }
+  .analysis>.scene { height:145px; }
+  .briefCard { padding:17px; }
+  .stageHeader { padding:16px; }
+  .stageHeader aside { margin-top:9px; padding:9px 10px; }
+  .eventCard { padding:12px 14px; }
+  .chartFigure { padding:10px; }
+  .evidencePanel,.planPanel { padding:15px; }
+  .probabilityReview { padding:15px 13px; }
+  .probabilitySeal { display:none; }
+  .probabilityList { margin-block:12px 10px; }
+  .processOutcomeCard { padding:15px; }
+  .outcomeStrip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .outcomeStrip article { border-right:1px solid var(--line); border-bottom:0; }
+  .outcomeStrip article:nth-child(2n) { border-right:0; }
+  .outcomeStrip article:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+  .scoreGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lessonGrid article { padding:15px; }
+}
